@@ -51,10 +51,16 @@ export function ProposalCard({
                 setVoteStatus("idle");
                 setMessage("");
             }, 2000);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setVoteStatus("error");
-            setMessage(err instanceof Error ? err.message : "Voting failed");
+
+            const errMsg = err instanceof Error ? err.message : String(err);
+            if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports")) {
+                setMessage("Insufficient SOL balance to cast vote.");
+            } else {
+                setMessage(errMsg || "Voting failed");
+            }
         }
     };
 

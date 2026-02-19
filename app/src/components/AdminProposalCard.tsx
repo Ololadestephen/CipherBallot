@@ -29,10 +29,16 @@ export function AdminProposalCard({
             setStatus("success");
             setMessage("Tally initialized successfully");
             onUpdate?.();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setStatus("error");
-            setMessage(err instanceof Error ? err.message : "Initialization failed");
+
+            const errMsg = err instanceof Error ? err.message : String(err);
+            if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports")) {
+                setMessage("Insufficient SOL balance to initialize tally (Rent).");
+            } else {
+                setMessage(errMsg || "Initialization failed");
+            }
         }
     };
 
@@ -50,10 +56,16 @@ export function AdminProposalCard({
             setStatus("success");
             setMessage("Tally finalized & revealed!");
             onUpdate?.();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setStatus("error");
-            setMessage(err instanceof Error ? err.message : "Finalization failed");
+
+            const errMsg = err instanceof Error ? err.message : String(err);
+            if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports")) {
+                setMessage("Insufficient SOL to finalize (Rent/Gas).");
+            } else {
+                setMessage(errMsg || "Finalization failed");
+            }
         }
     };
 

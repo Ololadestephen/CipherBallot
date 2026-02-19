@@ -144,10 +144,16 @@ export default function Creators() {
       setStatus("success");
       setMessage("Success! Proposal is live.");
       loadProposals(); // Refresh list on creation
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setStatus("error");
-      setMessage(err instanceof Error ? err.message : "Creation failed");
+
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports")) {
+        setMessage("Insufficient SOL balance to create proposal (Rent).");
+      } else {
+        setMessage(errMsg || "Creation failed");
+      }
     }
   };
 
