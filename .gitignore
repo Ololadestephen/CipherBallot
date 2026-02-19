@@ -36,6 +36,7 @@ macros.txt
 check_discriminator.js
 check_discriminator.cjs
 confidential_vote-new-keypair.json
+*_id.json
 
 # Temporary / Generated
 app/src/idl/confidential_vote.json.bk

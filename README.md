@@ -1,6 +1,5 @@
 # CipherBallot (Arcium + Solana)
 
-
 A confidential governance system where votes are cast and tallied inside Arcium’s encrypted shared state, and only the final, proof-backed results are published to Solana.
 
 ---

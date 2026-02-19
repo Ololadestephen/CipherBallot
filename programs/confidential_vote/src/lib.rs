@@ -37,7 +37,7 @@ pub mod confidential_vote {
         proposal.bump = ctx.bumps.proposal;
         proposal.results = vec![0; options.len()];
         proposal.vote_count = 0;
-        proposal.mint = ctx.accounts.mint.key(); // Store mint if provided (assumed logic elsewhere might set it, but let's check input)
+        proposal.mint = ctx.accounts.mint.key(); 
 
         Ok(())
     }
@@ -102,8 +102,7 @@ pub mod confidential_vote {
              proposal.results[vote_index as usize] += 1;
         }
 
-        // In Hybrid mode, we store the latest "state" or individual votes.
-        // For simplicity in this demo, we'll just log the encrypted vote.
+        
         let tally = &mut ctx.accounts.encrypted_tally;
         tally.last_encrypted_vote = encrypted_vote;
         
@@ -124,13 +123,6 @@ pub mod confidential_vote {
         Ok(())
     }
 
-    /// Arcium Hybrid Integration: Initialize Computation Definitions
-    /// These instructions are called by the Arcium SDK to register the circuit
-    /// definitions on-chain, owned by this program.
-
-    /// Arcium Hybrid Integration: Initialize Computation Definitions
-    /// These instructions are called by the Arcium SDK to register the circuit
-    /// definitions on-chain, owned by this program.
 
     pub fn init_init_tally_comp_def(ctx: Context<InitCompDef>) -> Result<()> {
         msg!("Initializing Tally Comp Def via CPI");
@@ -154,10 +146,6 @@ pub mod confidential_vote {
             signature,
         };
 
-        // Simple hash of "init_tally" to match SDK offset derivation logic if it was used locally
-        // But SDK uses `arcium.getCompDefAccOffset("init_tally")`.
-        // We need to pass the seed as u32. 
-        // Helper: hash("init_tally")[0..4] as u32 le
         let offset = get_noop_offset("init_tally"); 
 
         init_computation_definition(ctx, offset, meta)
@@ -292,12 +280,6 @@ pub struct InitCompDef<'info> {
     /// CHECK: Validated by Arcium program
     #[account(mut)]
     pub mxe_account: UncheckedAccount<'info>,
-    /// CHECK: This is the account we are initializing. 
-    /// Its address is derived deterministically by the Arcium SDK.
-    /// We just need to pass it through to the system program or Arcium program.
-    /// Actually, for the "Hybrid" model, we often just need to SIGN for it 
-    /// if it's a PDA of *our* program, or Arcium initializes it.
-    /// Given the SDK failing on "InstructionFallbackNotFound", it expects US to handle it.
     #[account(mut)]
     pub comp_def: UncheckedAccount<'info>,
     /// CHECK: Validated by Arcium
