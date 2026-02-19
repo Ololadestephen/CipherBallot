@@ -1,0 +1,5 @@
+[arcium]
+version = "0.8.0"
+
+[programs]
+confidential_vote = "Bc7u1THDttJMjzbdhestYiXPqq8XxCJMpfeDzU54h66L"

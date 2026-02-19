@@ -1,0 +1,16 @@
+[package]
+name = "constant_time_eq"
+version = "0.4.2"
+edition = "2021"
+authors = ["Cesar Bernay <cesar.bernay@gmail.com>"]
+description = "Compares two equal-sized byte slices in constant time."
+license = "CC0-1.0"
+repository = "https://github.com/cesarb/constant_time_eq"
+
+[lib]
+name = "constant_time_eq"
+path = "src/lib.rs"
+
+[features]
+default = ["std"]
+std = []

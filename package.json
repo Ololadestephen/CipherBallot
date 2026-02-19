@@ -1,0 +1,20 @@
+{
+  "name": "cipherballot",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "anchor test",
+    "test:ts": "ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+  },
+  "dependencies": {
+    "@arcium-hq/client": "0.8.0",
+    "@coral-xyz/anchor": "0.32.1",
+    "@solana/web3.js": "^1.95.0"
+  },
+  "devDependencies": {
+    "chai": "^4.4.1",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.5.4"
+  }
+}
