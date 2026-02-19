@@ -486,9 +486,17 @@ textarea::placeholder {
 }
 
 .link {
-  color: var(--accent-soft);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.link:hover {
+  color: #fff;
 }
 
 .footer {
