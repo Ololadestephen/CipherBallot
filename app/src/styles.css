@@ -520,6 +520,11 @@ textarea::placeholder {
 }
 
 @media (max-width: 720px) {
+  .topbar {
+    position: relative;
+    /* Unstick header on mobile to save screen space */
+  }
+
   main {
     padding: 24px 16px 68px;
   }
@@ -596,7 +601,7 @@ textarea::placeholder {
 
 .proposal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
