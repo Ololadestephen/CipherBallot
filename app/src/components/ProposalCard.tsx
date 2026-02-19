@@ -39,8 +39,7 @@ export function ProposalCard({
                 provider,
                 proposalPubkey: new PublicKey(proposal.address),
                 optionIndex,
-                // Only pass mint if eligibilityMode is 2 (Token Gated).
-                // Otherwise pass undefined so arcium.ts uses PROGRAM_ID as placeholder.
+
                 mint: proposal.eligibilityMode === 2 && proposal.requiredMint ? new PublicKey(proposal.requiredMint) : undefined
             });
 
@@ -56,8 +55,8 @@ export function ProposalCard({
             setVoteStatus("error");
 
             const errMsg = err instanceof Error ? err.message : String(err);
-            if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports")) {
-                setMessage("Insufficient SOL balance to cast vote.");
+            if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports") || errMsg.includes("insufficient funds")) {
+                setMessage("Insufficient balance to vote");
             } else {
                 setMessage(errMsg || "Voting failed");
             }

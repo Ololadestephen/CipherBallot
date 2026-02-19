@@ -149,8 +149,8 @@ export default function Creators() {
       setStatus("error");
 
       const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports")) {
-        setMessage("Insufficient SOL balance to create proposal (Rent).");
+      if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports") || errMsg.includes("insufficient funds")) {
+        setMessage("Insufficient balance to create proposal");
       } else {
         setMessage(errMsg || "Creation failed");
       }
