@@ -182,11 +182,13 @@ export async function createProposal(params: {
   // Convert whitelist PublicKeys to 32-byte arrays for IDL matching
   const parsedWhitelist = whitelist.map((value) => Array.from(new PublicKey(value).toBytes()));
 
+  console.log("[arcium] Creating proposal with 128-byte padding...");
+
   const sig = await program.methods
     .createProposal(
       proposalSalt,
-      title.padEnd(64, "\0").split("").map(c => c.charCodeAt(0)),
-      options.map(opt => opt.padEnd(32, "\0").split("").map(c => c.charCodeAt(0))),
+      title.padEnd(128, "\0").slice(0, 128).split("").map(c => c.charCodeAt(0)),
+      options.map(opt => opt.padEnd(128, "\0").slice(0, 128).split("").map(c => c.charCodeAt(0))),
       new anchor.BN(startTs),
       new anchor.BN(endTs),
       eligibilityMode,

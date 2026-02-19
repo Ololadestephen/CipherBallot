@@ -83,10 +83,10 @@ export function ProposalCard({
         ? (provider && proposal.whitelist.includes(provider.wallet.publicKey.toBase58()))
         : true;
 
-    const canVote = proposal.status === "Active" && !hasVoted && isWhitelisted;
+    const isDetailsPage = window.location.hash.includes("/proposal/") || window.location.pathname.includes("/proposal/");
 
     return (
-        <div className={`proposal-card ${isExpanded ? "expanded" : ""}`}>
+        <div className={`proposal-card ${isDetailsPage ? "expanded" : ""}`}>
             <div className="card-header">
                 <div className="card-top">
                     <span className={`pill ${statusColor} glass-panel`}>{proposal.status}</span>
@@ -108,10 +108,10 @@ export function ProposalCard({
             </div>
 
             <div className="card-content">
-                {isExpanded ? (
+                {isDetailsPage ? (
                     <div className="vote-interface">
                         <p className="instruction">Select your choice:</p>
-                        <div className="options-grid">
+                        <div className="options-vertical-stack" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                             {(proposal.options.length ? proposal.options : ["Option 1", "Option 2"]).map((opt, idx) => {
                                 const label = opt || `Option ${idx + 1}`;
                                 return (
@@ -119,7 +119,18 @@ export function ProposalCard({
                                         key={idx}
                                         className={`option-tile ${optionIndex === idx ? "selected" : ""}`}
                                         onClick={() => setOptionIndex(idx)}
-                                        disabled={hasVoted}
+                                        disabled={hasVoted || proposal.status !== "Active"}
+                                        style={{
+                                            display: 'block',
+                                            width: '100%',
+                                            height: 'auto',
+                                            minHeight: '3.5rem',
+                                            padding: '16px 20px',
+                                            whiteSpace: 'normal',
+                                            textAlign: 'left',
+                                            wordBreak: 'normal',
+                                            overflowWrap: 'break-word'
+                                        }}
                                     >
                                         {label}
                                     </button>
@@ -128,21 +139,16 @@ export function ProposalCard({
                         </div>
 
                         <div className="action-row">
+                            {/* No cancel button needed in details view usually, but we can keep back link outside */}
                             <button
-                                className="button-ghost small"
-                                onClick={() => setIsExpanded(false)}
-                                disabled={voteStatus === "sending"}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="cta"
+                                className="cta full-width"
                                 onClick={handleVote}
-                                disabled={voteStatus === "sending" || optionIndex === null || hasVoted}
+                                disabled={voteStatus === "sending" || optionIndex === null || hasVoted || proposal.status !== "Active"}
                             >
                                 {hasVoted ? "Already Voted" :
-                                    voteStatus === "sending" ? "Submitting..." :
-                                        voteStatus === "done" ? "Success" : "Confirm Vote"}
+                                    proposal.status !== "Active" ? "Voting Closed" :
+                                        voteStatus === "sending" ? "Submitting..." :
+                                            voteStatus === "done" ? "Success" : "Confirm Vote"}
                             </button>
                         </div>
                         {hasVoted && <p className="feedback-msg info">You have already voted on this proposal.</p>}
@@ -150,19 +156,35 @@ export function ProposalCard({
                     </div>
                 ) : (
                     <div className="card-footer">
-                        <button
-                            className="button-ghost full-width compact-btn"
-                            onClick={() => setIsExpanded(true)}
-                            disabled={!canVote}
+                        <a
+                            href={`/proposal/${proposal.address}`}
+                            className={`cta full-width compact-btn ${hasVoted ? "voted-state" :
+                                proposal.status === "Ended" ? "ended-state" : ""
+                                }`}
+                            style={{
+                                textAlign: 'center',
+                                textDecoration: 'none',
+                                background: hasVoted ? "rgba(46, 204, 113, 0.2) !important" :
+                                    proposal.status === "Ended" ? "transparent !important" : undefined,
+                                border: hasVoted ? "1px solid #2ecc71" :
+                                    proposal.status === "Ended" ? "1px solid var(--stroke)" : undefined,
+                                color: hasVoted ? "#2ecc71 !important" :
+                                    proposal.status === "Ended" ? "var(--muted) !important" : undefined
+                            }}
                         >
-                            {hasVoted ? "Already Voted" :
-                                !isWhitelisted ? "Not Whitelisted" :
-                                    proposal.status === "Active" ? "Cast Encrypted Vote" :
-                                        proposal.status === "Ended" ? "Voting Ended" : "Voting Starts Soon"}
-                        </button>
+                            {hasVoted ? (
+                                <>
+                                    <span style={{ fontSize: "16px" }}>✓</span> View Selection
+                                </>
+                            ) : proposal.status === "Ended" ? (
+                                "View Results"
+                            ) : (
+                                "View & Vote"
+                            )}
+                        </a>
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

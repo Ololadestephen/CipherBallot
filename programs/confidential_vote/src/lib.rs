@@ -5,8 +5,8 @@ use solana_program::program::invoke;
 
 declare_id!("Bc7u1THDttJMjzbdhestYiXPqq8XxCJMpfeDzU54h66L");
 
-const TITLE_MAX_LEN: usize = 64;
-const OPTION_MAX_LEN: usize = 32;
+const TITLE_MAX_LEN: usize = 128;
+const OPTION_MAX_LEN: usize = 128;
 const MAX_OPTIONS: usize = 8;
 const MAX_WHITELIST: usize = 64;
 
@@ -280,6 +280,7 @@ pub struct InitCompDef<'info> {
     /// CHECK: Validated by Arcium program
     #[account(mut)]
     pub mxe_account: UncheckedAccount<'info>,
+    /// CHECK: Validated by Arcium program
     #[account(mut)]
     pub comp_def: UncheckedAccount<'info>,
     /// CHECK: Validated by Arcium

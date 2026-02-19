@@ -55,7 +55,7 @@ body::before {
     linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
   z-index: -2;
-  opacity: 0.5;
+  opacity: 0.3;
 }
 
 a {
@@ -219,13 +219,13 @@ main {
   border-radius: 12px;
   background: var(--primary) !important;
   color: #FFFFFF !important;
-  border: 1px solid var(--primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: var(--font-heading);
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(123, 97, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(123, 97, 255, 0.2);
 }
 
 .cta:hover,
@@ -233,7 +233,8 @@ main {
 .wallet-adapter-button-trigger:hover {
   transform: translateY(-2px);
   background: var(--primary-hover) !important;
-  box-shadow: 0 6px 16px rgba(123, 97, 255, 0.5);
+  box-shadow: 0 6px 16px rgba(123, 97, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .cta:disabled,
@@ -557,6 +558,10 @@ textarea::placeholder {
     grid-template-columns: 1fr;
     gap: 6px;
   }
+
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --- NEW DASHBOARD COMPONENTS --- */
@@ -611,7 +616,6 @@ textarea::placeholder {
   background: rgba(15, 15, 15, 0.6);
   border: 1px solid var(--stroke);
   border-radius: var(--radius);
-  overflow: hidden;
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
@@ -626,8 +630,7 @@ textarea::placeholder {
 .proposal-card.expanded {
   border-color: var(--accent);
   background: #0a0a0a;
-  grid-row: span 2;
-  /* If grid support exists, nice to have */
+  height: auto !important;
 }
 
 .card-header {
@@ -702,23 +705,44 @@ textarea::placeholder {
   font-weight: 500;
 }
 
-.options-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 8px;
+.options-vertical-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px;
   margin-bottom: 20px;
+  width: 100%;
+  height: auto !important;
 }
 
+/* Main Option Tile Definition */
 .option-tile {
+  appearance: none;
+  /* Reset button styles */
   background: #111;
   border: 1px solid var(--stroke);
   color: #aaa;
-  padding: 12px 8px;
-  border-radius: 8px;
+  padding: 20px 24px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.15s;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  white-space: normal;
+  /* Essential for wrapping */
+  text-align: left;
+  min-height: 3.5rem;
+  height: auto;
+  /* Essential for growth */
+  display: block;
+  /* Works better for wrapping text in buttons than flex sometimes */
+  width: 100%;
+  margin: 0;
+  /* Reset margins */
+  transition: all 0.2s ease;
+  word-break: normal;
+  overflow-wrap: break-word;
+  flex-shrink: 0;
+  /* Critical */
 }
 
 .option-tile:hover {
@@ -806,20 +830,18 @@ textarea::placeholder {
 
 /* Selected Option - Hollow/Glow Style override */
 .option-tile.selected {
-  background: transparent;
+  background: rgba(123, 97, 255, 0.1);
   color: var(--accent);
   border: 1px solid var(--accent);
-  box-shadow: 0 0 12px rgba(255, 106, 0, 0.15), inset 0 0 12px rgba(255, 106, 0, 0.05);
+  box-shadow: 0 0 12px rgba(123, 97, 255, 0.15), inset 0 0 12px rgba(123, 97, 255, 0.05);
   font-weight: 700;
 }
 
-.option-tile:hover {
-  border-color: var(--accent-soft);
-  color: #ddd;
-}
-
-.option-tile.selected:hover {
-  color: var(--accent);
+/* Remove hover override that conflicts */
+.option-tile:not(.selected):hover {
+  background: #1a1a1a;
+  border-color: #444;
+  color: #fff;
 }
 
 .compact-btn {

@@ -71,8 +71,8 @@ export type ProposalView = {
 
 const readonlyWallet: anchor.Wallet = {
   publicKey: PublicKey.default,
-  signTransaction: async <T extends Transaction>(tx: T): Promise<T> => tx,
-  signAllTransactions: async <T extends Transaction[]>(txs: T): Promise<T> => txs
+  signTransaction: async <T extends Transaction | anchor.web3.VersionedTransaction>(tx: T): Promise<T> => tx as T,
+  signAllTransactions: async <T extends (Transaction | anchor.web3.VersionedTransaction)[]>(txs: T): Promise<T> => txs as T
 };
 
 function toNumber(value: unknown): number {
@@ -137,11 +137,71 @@ async function getProgram(connection: Connection): Promise<anchor.Program> {
 }
 
 export async function fetchProposals(connection: Connection): Promise<ProposalView[]> {
+  console.log("[cipherballot] Fetching proposals...");
   const program = await getProgram(connection);
-  const rows = await program.account.proposal.all();
-  return rows
-    .map((row) => mapProposal(row.publicKey, row.account as RawProposal))
-    .sort((a, b) => b.startTs - a.startTs);
+
+  // Filter out any proposal created before this timestamp (approx Feb 19 2026, 16:15 UTC / 17:15 Local)
+  // This hides the 17:06 Local "broken" proposal but keeps the 17:30 Local one.
+  const MIN_DISPLAY_TIMESTAMP = 1771517700; // 2026-02-19T16:15:00Z (Using UTC)
+
+
+  try {
+    // Custom fetch to handle deserialization failures (e.g. from schema upgrade)
+    // 1. Get all accounts owned by the program with proposal discriminator
+    // proposal discriminator = sha256("account:Proposal")[..8]
+    // [26, 94, 189, 187, 116, 136, 53, 33]
+    const discriminator = [26, 94, 189, 187, 116, 136, 53, 33];
+    const accounts = await connection.getProgramAccounts(PROGRAM_ID, {
+      filters: [
+        {
+          memcmp: {
+            offset: 0,
+            bytes: anchor.utils.bytes.bs58.encode(Uint8Array.from(discriminator)),
+          },
+        },
+      ],
+    });
+
+    console.log(`[cipherballot] Found ${accounts.length} raw proposal accounts.`);
+
+    const parsed: ProposalView[] = [];
+
+    for (const { pubkey, account } of accounts) {
+      try {
+        // debug log
+        console.log(`[cipherballot] Account ${pubkey.toBase58()} size: ${account.data.length}`);
+
+        // Filter out legacy accounts which are much smaller (around 500-600 bytes)
+        // New Proposal accounts are ~1500 bytes (128-byte title + 8 options * 128 bytes)
+        if (account.data.length < 1000) {
+          console.warn(`[cipherballot] Skipping legacy proposal ${pubkey.toBase58()} due to size mismatch (${account.data.length} bytes).`);
+          continue;
+        }
+
+        // 2. Try to decode each account
+        // Anchor uses camelCase for account names in coder
+        const decoded = program.coder.accounts.decode("proposal", account.data) as RawProposal;
+
+        // Check timestamp to filter out old broken proposals
+        const startTs = toNumber(decoded.startTime ?? decoded.start_time);
+        if (startTs < MIN_DISPLAY_TIMESTAMP) {
+          console.log(`[cipherballot] Skipping old proposal ${pubkey.toBase58()} (startTs: ${startTs} < ${MIN_DISPLAY_TIMESTAMP})`);
+          continue;
+        }
+
+        parsed.push(mapProposal(pubkey, decoded));
+      } catch (err) {
+        // Log error but don't crash
+        console.warn(`[cipherballot] Failed to decode proposal ${pubkey.toBase58()} (likely legacy schema):`, err);
+      }
+    }
+
+    console.log(`[cipherballot] Successfully parsed ${parsed.length} proposals.`);
+    return parsed.sort((a, b) => b.startTs - a.startTs);
+  } catch (e) {
+    console.error("[cipherballot] Error fetching proposals:", e);
+    return [];
+  }
 }
 
 export async function fetchProposalByAddress(connection: Connection, address: string): Promise<ProposalView> {

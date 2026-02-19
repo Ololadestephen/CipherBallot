@@ -153,7 +153,7 @@
       ],
       "args": [
         {
-          "name": "proposal_salt",
+          "name": "_proposal_salt",
           "type": {
             "array": [
               "u8",
@@ -166,7 +166,7 @@
           "type": {
             "array": [
               "u8",
-              64
+              128
             ]
           }
         },
@@ -176,7 +176,7 @@
             "vec": {
               "array": [
                 "u8",
-                32
+                128
               ]
             }
           }
@@ -196,12 +196,7 @@
         {
           "name": "whitelist",
           "type": {
-            "vec": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
+            "vec": "pubkey"
           }
         }
       ]
@@ -230,6 +225,132 @@
         {
           "name": "proposal",
           "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_apply_vote_comp_def",
+      "discriminator": [
+        0,
+        177,
+        159,
+        17,
+        4,
+        180,
+        255,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mxe_account",
+          "writable": true
+        },
+        {
+          "name": "comp_def",
+          "writable": true
+        },
+        {
+          "name": "lut"
+        },
+        {
+          "name": "lut_program"
+        },
+        {
+          "name": "arcium_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_init_tally_comp_def",
+      "discriminator": [
+        73,
+        66,
+        154,
+        157,
+        133,
+        123,
+        179,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mxe_account",
+          "writable": true
+        },
+        {
+          "name": "comp_def",
+          "writable": true
+        },
+        {
+          "name": "lut"
+        },
+        {
+          "name": "lut_program"
+        },
+        {
+          "name": "arcium_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_reveal_tally_comp_def",
+      "discriminator": [
+        107,
+        78,
+        64,
+        206,
+        75,
+        159,
+        140,
+        88
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mxe_account",
+          "writable": true
+        },
+        {
+          "name": "comp_def",
+          "writable": true
+        },
+        {
+          "name": "lut"
+        },
+        {
+          "name": "lut_program"
+        },
+        {
+          "name": "arcium_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -464,7 +585,7 @@
             "type": {
               "array": [
                 "u8",
-                64
+                128
               ]
             }
           },
@@ -474,7 +595,7 @@
               "vec": {
                 "array": [
                   "u8",
-                  32
+                  128
                 ]
               }
             }
