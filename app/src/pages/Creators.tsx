@@ -345,7 +345,39 @@ export default function Creators() {
                   <input className="input" value={requiredMint} onChange={e => setRequiredMint(e.target.value)} placeholder="Token Mint Address" style={{ marginTop: '8px' }} />
                 )}
                 {eligibility === "whitelist" && (
-                  <textarea className="input textarea" value={whitelistRaw} onChange={e => setWhitelistRaw(e.target.value)} placeholder="Address 1&#10;Address 2&#10;..." style={{ marginTop: '8px' }} rows={3} />
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span className="input-label" style={{ marginBottom: 0 }}>Addresses (One per line)</span>
+                      <label className="link" style={{ fontSize: '12px', cursor: 'pointer' }}>
+                        Import CSV
+                        <input
+                          type="file"
+                          accept=".csv,.txt"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const text = evt.target?.result as string;
+                              // Extract potential base58 addresses (32-44 chars)
+                              const addresses = text.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/g);
+                              if (addresses) {
+                                const unique = Array.from(new Set(addresses));
+                                setWhitelistRaw(prev => (prev ? prev + '\n' : '') + unique.join('\n'));
+                                setMessage(`Imported ${unique.length} addresses.`);
+                              } else {
+                                setMessage("No valid addresses found in file.");
+                              }
+                            };
+                            reader.readAsText(file);
+                            e.target.value = ''; // Reset
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <textarea className="input textarea" value={whitelistRaw} onChange={e => setWhitelistRaw(e.target.value)} placeholder="Address 1&#10;Address 2&#10;..." rows={5} />
+                  </div>
                 )}
               </div>
 
