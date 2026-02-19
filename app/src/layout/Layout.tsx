@@ -1,10 +1,32 @@
 import { Link, NavLink } from "react-router-dom";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useState, useEffect } from "react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY < 10) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false); // Hide when scrolling down & not at top
+      } else {
+        setIsVisible(true); // Show when scrolling up
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
   return (
     <div className="app-shell">
-      <header className="topbar glass-panel" style={{ borderBottom: '1px solid var(--stroke)' }}>
+      <header className={`topbar glass-panel ${!isVisible ? 'hidden' : ''}`} style={{ borderBottom: '1px solid var(--stroke)' }}>
         <div className="brand">
           <Link to="/" className="brand-link">
             <span className="brand-mark">C</span>

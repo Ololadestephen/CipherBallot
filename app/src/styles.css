@@ -81,6 +81,11 @@ a {
   background: rgba(10, 10, 10, 0.8);
   border-bottom: 1px solid var(--stroke);
   backdrop-filter: blur(12px);
+  transition: transform 0.3s ease-in-out;
+}
+
+.topbar.hidden {
+  transform: translateY(-100%);
 }
 
 .brand {
@@ -520,10 +525,7 @@ textarea::placeholder {
 }
 
 @media (max-width: 720px) {
-  .topbar {
-    position: relative;
-    /* Unstick header on mobile to save screen space */
-  }
+  /* .topbar stays sticky, but will be hidden by JS on scroll down */
 
   main {
     padding: 24px 16px 68px;
