@@ -2,7 +2,7 @@
 
 A confidential governance system where votes are cast and tallied inside Arcium’s encrypted shared state, and only the final, proof-backed results are published to Solana.
 
-**Live Demo:** [http://cipherballot.xyz](http://cipherballot.xyz)
+**Live Demo:** [https://cipherballot.xyz](https://cipherballot.xyz)
 
 ---
 
