@@ -3,7 +3,7 @@ import { PublicKey, SystemProgram } from "@solana/web3.js";
 import idlJson from "../idl/confidential_vote.json";
 import { Buffer } from "buffer";
 
-const PROGRAM_ID_STR = "BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2";
+const PROGRAM_ID_STR = "833fAPgL1hjhonBa349E5UyGpP7dUdmiTELuJe3pbAXW";
 const PROGRAM_ID = new PublicKey(PROGRAM_ID_STR);
 const MAX_OPTIONS = 8;
 

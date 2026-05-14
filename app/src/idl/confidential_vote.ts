@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/confidential_vote.json`.
  */
 export type ConfidentialVote = {
-  "address": "BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2",
+  "address": "833fAPgL1hjhonBa349E5UyGpP7dUdmiTELuJe3pbAXW",
   "metadata": {
     "name": "confidentialVote",
     "version": "0.1.0",

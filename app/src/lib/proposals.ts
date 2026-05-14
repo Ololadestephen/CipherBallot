@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import idlJson from "../idl/confidential_vote.json";
 
-const DEFAULT_PROGRAM_ID = "BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2";
+const DEFAULT_PROGRAM_ID = "833fAPgL1hjhonBa349E5UyGpP7dUdmiTELuJe3pbAXW";
 
 function resolveProgramId(): PublicKey {
   const configured = (import.meta.env.VITE_PROGRAM_ID as string | undefined)?.trim();

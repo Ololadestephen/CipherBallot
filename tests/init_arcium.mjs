@@ -5,7 +5,7 @@ import BN from 'bn.js';
 import fs from 'fs';
 import path from 'path';
 
-const PROGRAM_ID = new PublicKey('BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2');
+const PROGRAM_ID = new PublicKey('833fAPgL1hjhonBa349E5UyGpP7dUdmiTELuJe3pbAXW');
 const LUT_PROGRAM_ID = new PublicKey('AddressLookupTab1e1111111111111111111111111');
 const CLUSTER_OFFSET = Number(process.env.ARCIUM_CLUSTER_OFFSET ?? 456);
 const RPC_URL = process.env.ANCHOR_PROVIDER_URL ?? process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';

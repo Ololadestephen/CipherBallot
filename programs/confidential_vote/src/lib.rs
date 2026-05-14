@@ -14,7 +14,7 @@ use arcium_client::idl::arcium::types::{CallbackAccount, CallbackInstruction, Ci
 use arcium_macros::circuit_hash;
 
 // Local deploy key requested for the production Arcium queue migration.
-declare_id!("BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2");
+declare_id!("833fAPgL1hjhonBa349E5UyGpP7dUdmiTELuJe3pbAXW");
 
 const TITLE_MAX_LEN: usize = 128;
 const OPTION_MAX_LEN: usize = 128;
