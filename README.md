@@ -136,22 +136,3 @@ CipherBallot demonstrates confidential governance with Solana for public settlem
 ## License
 
 MIT
-
-
-## Off-chain circuit storage
-
-CipherBallot uses Arcium computation definitions whose circuit source points to public off-chain `.arcis` artifacts instead of storing large circuits directly on-chain. This avoids the devnet callback failure mode seen with large on-chain circuit storage.
-
-The compiled circuit files are committed under `app/public/circuits/` and are expected to be reachable by Arcium nodes at:
-
-`https://www.cipherballot.xyz/circuits/{circuit}.arcis`
-
-For another deployment host, build the program with:
-
-`CIPHERBALLOT_CIRCUIT_BASE_URL=https://www.cipherballot.xyz/circuits anchor build`
-
-Then deploy the program and run:
-
-`node tests/init_arcium.mjs`
-
-Existing computation definitions cannot be mutated from on-chain to off-chain storage, so devnet reinitialization requires a fresh program id or fresh computation-definition namespace.
