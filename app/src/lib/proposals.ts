@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import idlJson from "../idl/confidential_vote.json";
 
-const DEFAULT_PROGRAM_ID = "Bc7u1THDttJMjzbdhestYiXPqq8XxCJMpfeDzU54h66L";
+const DEFAULT_PROGRAM_ID = "BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2";
 
 function resolveProgramId(): PublicKey {
   const configured = (import.meta.env.VITE_PROGRAM_ID as string | undefined)?.trim();
@@ -19,10 +19,16 @@ function resolveProgramId(): PublicKey {
 }
 
 export const PROGRAM_ID = resolveProgramId();
-const IDL = {
-  ...(idlJson as anchor.Idl),
-  address: PROGRAM_ID.toBase58()
-} as anchor.Idl;
+function clientSafeIdl(programId: PublicKey): anchor.Idl {
+  const raw = idlJson as anchor.Idl;
+  return {
+    ...raw,
+    address: programId.toBase58(),
+    instructions: raw.instructions?.filter((ix) => !ix.name.endsWith("_callback") && !ix.name.endsWith("Callback"))
+  } as anchor.Idl;
+}
+
+const IDL = clientSafeIdl(PROGRAM_ID);
 
 type RawProposal = {
   creator: PublicKey;
@@ -35,6 +41,8 @@ type RawProposal = {
   tallyInitialized?: boolean;
   tally_initialized?: boolean;
   finalized: boolean;
+  revealRequested?: boolean;
+  reveal_requested?: boolean;
   results?: anchor.BN[];
   finalTally?: anchor.BN[];
   final_tally?: anchor.BN[];
@@ -45,6 +53,19 @@ type RawProposal = {
   vote_count?: anchor.BN;
   vote_count?: anchor.BN;
   mint?: PublicKey;
+};
+
+type RawEncryptedTally = {
+  appliedVoteCount?: anchor.BN;
+  applied_vote_count?: anchor.BN;
+  pendingVoteCount?: anchor.BN;
+  pending_vote_count?: anchor.BN;
+};
+
+type EncryptedTallyStatus = {
+  address: string;
+  appliedVoteCount: number;
+  pendingVoteCount: number;
 };
 
 export type ProposalStatus = "Active" | "Upcoming" | "Ended";
@@ -60,8 +81,11 @@ export type ProposalView = {
   votesCast: number;
   tallyInitialized: boolean;
   finalized: boolean;
+  revealRequested: boolean;
   finalTally: number[];
   encryptedTally: string;
+  appliedEncryptedVotes: number;
+  pendingEncryptedVotes: number;
   finalizationSig: number[];
   eligibilityMode: number;
   requiredMint: string;
@@ -93,7 +117,7 @@ function deriveStatus(startTs: number, endTs: number, nowTs = Math.floor(Date.no
   return "Active";
 }
 
-function mapProposal(address: PublicKey, account: RawProposal): ProposalView {
+function mapProposal(address: PublicKey, account: RawProposal, tallyStatus?: EncryptedTallyStatus | null): ProposalView {
   // console.log("[cipherballot] Mapping proposal account:", account);
   const startTs = toNumber(account.startTime ?? account.start_time);
   const endTs = toNumber(account.endTime ?? account.end_time);
@@ -121,13 +145,36 @@ function mapProposal(address: PublicKey, account: RawProposal): ProposalView {
     votesCast,
     tallyInitialized,
     finalized: Boolean(account.finalized),
+    revealRequested: Boolean(account.revealRequested ?? account.reveal_requested),
     finalTally: results,
-    encryptedTally: "",
+    encryptedTally: tallyStatus?.address ?? "",
+    appliedEncryptedVotes: tallyStatus?.appliedVoteCount ?? 0,
+    pendingEncryptedVotes: tallyStatus?.pendingVoteCount ?? 0,
     finalizationSig: [],
     eligibilityMode: toNumber(account.eligibilityMode ?? account.eligibility_mode),
     requiredMint,
     whitelist,
     status: deriveStatus(startTs, endTs)
+  };
+}
+
+function deriveEncryptedTallyAddress(proposal: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("encrypted_tally"), proposal.toBuffer()],
+    PROGRAM_ID
+  )[0];
+}
+
+async function fetchEncryptedTallyStatus(program: anchor.Program, proposal: PublicKey): Promise<EncryptedTallyStatus | null> {
+  const encryptedTally = deriveEncryptedTallyAddress(proposal);
+  const info = await program.provider.connection.getAccountInfo(encryptedTally, "confirmed");
+  if (!info) return null;
+
+  const decoded = program.coder.accounts.decode("encryptedTally", info.data) as RawEncryptedTally;
+  return {
+    address: encryptedTally.toBase58(),
+    appliedVoteCount: toNumber(decoded.appliedVoteCount ?? decoded.applied_vote_count ?? 0),
+    pendingVoteCount: toNumber(decoded.pendingVoteCount ?? decoded.pending_vote_count ?? 0)
   };
 }
 
@@ -189,7 +236,12 @@ export async function fetchProposals(connection: Connection): Promise<ProposalVi
           continue;
         }
 
-        parsed.push(mapProposal(pubkey, decoded));
+        const tallyStatus = await fetchEncryptedTallyStatus(program, pubkey).catch((err) => {
+          console.warn(`[cipherballot] Failed to fetch encrypted tally ${pubkey.toBase58()}:`, err);
+          return null;
+        });
+
+        parsed.push(mapProposal(pubkey, decoded, tallyStatus));
       } catch (err) {
         // Log error but don't crash
         console.warn(`[cipherballot] Failed to decode proposal ${pubkey.toBase58()} (likely legacy schema):`, err);

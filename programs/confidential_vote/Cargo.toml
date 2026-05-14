@@ -7,6 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [features]
+default = []
 no-entrypoint = []
 cpi = ["no-entrypoint"]
 custom-heap = []
@@ -14,9 +15,12 @@ custom-panic = []
 anchor-debug = []
 no-idl = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "arcium-anchor/idl-build"]
 
 [dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 anchor-spl = "0.32.1"
-solana-program = "2.3.0"
+arcium-anchor = "0.9.7"
+arcium-client = { version = "0.9.7", default-features = false }
+arcium-macros = "0.9.7"
+solana-alt-bn128-bls = "0.1.0"

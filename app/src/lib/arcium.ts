@@ -1,16 +1,22 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import idlJson from "../idl/confidential_vote.json";
 import { Buffer } from "buffer";
 
-const PROGRAM_ID_STR = "Bc7u1THDttJMjzbdhestYiXPqq8XxCJMpfeDzU54h66L";
+const PROGRAM_ID_STR = "BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2";
 const PROGRAM_ID = new PublicKey(PROGRAM_ID_STR);
 const MAX_OPTIONS = 8;
 
-const IDL = {
-  ...(idlJson as anchor.Idl),
-  address: PROGRAM_ID.toBase58()
-} as anchor.Idl;
+function clientSafeIdl(programId: PublicKey): anchor.Idl {
+  const raw = idlJson as anchor.Idl;
+  return {
+    ...raw,
+    address: programId.toBase58(),
+    instructions: raw.instructions?.filter((ix) => !ix.name.endsWith("_callback") && !ix.name.endsWith("Callback"))
+  } as anchor.Idl;
+}
+
+const IDL = clientSafeIdl(PROGRAM_ID);
 
 let arciumClientPromise: Promise<any> | null = null;
 async function getArciumClient() {
@@ -23,10 +29,78 @@ async function getArciumClient() {
   return arciumClientPromise;
 }
 
+function nextComputationOffset(): anchor.BN {
+  const bytes = getRandomBytes(8);
+  let value = 0n;
+  for (let i = 0; i < bytes.length; i += 1) {
+    value |= BigInt(bytes[i]) << BigInt(i * 8);
+  }
+  return new anchor.BN(value.toString());
+}
+
 function getRandomBytes(len: number): Uint8Array {
   const bytes = new Uint8Array(len);
   crypto.getRandomValues(bytes);
   return bytes;
+}
+
+function getClusterOffset(client: any): number {
+  try {
+    const env = client.getArciumEnv?.();
+    if (typeof env?.arciumClusterOffset === "number") return env.arciumClusterOffset;
+  } catch (_) {
+    // Browser builds may not expose process env; use the public devnet offset.
+  }
+  return Number(import.meta.env.VITE_ARCIUM_CLUSTER_OFFSET ?? 456);
+}
+
+function getCompDefOffset(client: any, name: string): number {
+  const raw = client.getCompDefAccOffset(name);
+  return Buffer.from(raw).readUInt32LE(0);
+}
+
+function getArciumSignerPda(): PublicKey {
+  return PublicKey.findProgramAddressSync([Buffer.from("ArciumSignerAccount")], PROGRAM_ID)[0];
+}
+
+async function ensureArciumSignerAccount(provider: anchor.AnchorProvider, program: anchor.Program): Promise<PublicKey> {
+  const signerAccount = getArciumSignerPda();
+  const info = await provider.connection.getAccountInfo(signerAccount, "confirmed");
+  if (!info) {
+    await program.methods
+      .initSignerAccount()
+      .accountsPartial({
+        payer: provider.wallet.publicKey,
+        signerAccount,
+        systemProgram: SystemProgram.programId
+      })
+      .rpc();
+  }
+  return signerAccount;
+}
+
+async function getQueueAccounts(
+  provider: anchor.AnchorProvider,
+  program: anchor.Program,
+  encryptedIxName: string,
+  computationOffset: anchor.BN
+) {
+  const client = await getArciumClient();
+  const clusterOffset = getClusterOffset(client);
+  const signerAccount = await ensureArciumSignerAccount(provider, program);
+  return {
+    arciumProgram: client.getArciumProgramId(),
+    mxeAccount: client.getMXEAccAddress(PROGRAM_ID),
+    cluster: client.getClusterAccAddress(clusterOffset),
+    compDefAccount: client.getCompDefAccAddress(PROGRAM_ID, getCompDefOffset(client, encryptedIxName)),
+    mempoolAccount: client.getMempoolAccAddress(clusterOffset),
+    execpoolAccount: client.getExecutingPoolAccAddress(clusterOffset),
+    poolAccount: client.getFeePoolAccAddress(),
+    clockAccount: client.getClockAccAddress(),
+    signerAccount,
+    compAccount: client.getComputationAccAddress(clusterOffset, computationOffset),
+    systemProgram: SystemProgram.programId
+  };
 }
 
 export async function getMxePublicKeyWithRetry(
@@ -221,13 +295,16 @@ export async function initEncryptedTally(params: {
   const { creatorX25519Pubkey, nonce, encryptedTally: encryptedInput } =
     await encryptInitialTally(provider, optionsCount);
 
+  const computationOffset = nextComputationOffset();
+  const queueAccounts = await getQueueAccounts(provider, program, "init_tally", computationOffset);
+
   const sig = await program.methods
-    .initTally(creatorX25519Pubkey, nonce, encryptedInput)
+    .initTally(creatorX25519Pubkey, nonce, encryptedInput, computationOffset)
     .accountsPartial({
       creator: provider.wallet.publicKey,
       proposal: proposalPubkey,
       encryptedTally,
-      systemProgram: SystemProgram.programId
+      ...queueAccounts
     })
     .rpc();
 
@@ -237,16 +314,24 @@ export async function initEncryptedTally(params: {
 export async function finalizeEncryptedTally(params: {
   provider: anchor.AnchorProvider;
   proposalPubkey: PublicKey;
-  // results: number[]; // Removed in Hybrid/Demo Mode
 }) {
   const { provider, proposalPubkey } = params;
   const program = new anchor.Program(IDL, provider);
+  const encryptedTally = PublicKey.findProgramAddressSync(
+    [Buffer.from("encrypted_tally"), proposalPubkey.toBuffer()],
+    PROGRAM_ID
+  )[0];
+
+  const computationOffset = nextComputationOffset();
+  const queueAccounts = await getQueueAccounts(provider, program, "reveal_tally", computationOffset);
 
   const sig = await program.methods
-    .finalizeTally()
+    .finalizeTally(computationOffset)
     .accountsPartial({
       creator: provider.wallet.publicKey,
       proposal: proposalPubkey,
+      encryptedTally,
+      ...queueAccounts
     })
     .rpc();
 
@@ -295,40 +380,21 @@ export async function submitEncryptedVote(params: {
     PROGRAM_ID
   )[0];
 
-  let remainingAccounts: { pubkey: PublicKey; isSigner: boolean; isWritable: boolean }[] = [];
-  let voterToken: PublicKey | null = null;
+  const voterToken = mint ? getAssociatedTokenAddress(mint, provider.wallet.publicKey) : null;
+  const computationOffset = nextComputationOffset();
+  const queueAccounts = await getQueueAccounts(provider, program, "apply_vote", computationOffset);
 
-  if (mint) {
-    voterToken = getAssociatedTokenAddress(mint, provider.wallet.publicKey);
-  }
-
-  // Pure manual TransactionInstruction to eliminate all Anchor client magic
-  const ixData = program.coder.instruction.encode("castVote", {
-    voterX25519Pubkey,
-    nonce,
-    encryptedVote,
-    voteIndex: optionIndex
-  });
-
-  const keys = [
-    { pubkey: provider.wallet.publicKey, isSigner: true, isWritable: true }, // voter
-    { pubkey: proposalPubkey, isSigner: false, isWritable: true }, // proposal
-    { pubkey: encryptedTally, isSigner: false, isWritable: true }, // encrypted_tally
-    { pubkey: voterRecord, isSigner: false, isWritable: true }, // voter_record
-    { pubkey: voterToken || PROGRAM_ID, isSigner: false, isWritable: false }, // voter_token (Optional/None)
-    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
-  ];
-
-  console.log("[arcium.ts] DEBUG: Pure Keys:", keys.map(k => k.pubkey.toBase58()));
-
-  const ix = new TransactionInstruction({
-    keys,
-    programId: PROGRAM_ID,
-    data: ixData
-  });
-
-  const tx = new Transaction().add(ix);
-  const sig = await provider.sendAndConfirm(tx);
+  const sig = await program.methods
+    .castVote(voterX25519Pubkey, nonce, encryptedVote, computationOffset)
+    .accountsPartial({
+      voter: provider.wallet.publicKey,
+      proposal: proposalPubkey,
+      encryptedTally,
+      voterRecord,
+      voterToken,
+      ...queueAccounts
+    })
+    .rpc();
   return sig;
 }
 

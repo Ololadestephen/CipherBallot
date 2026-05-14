@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arcium-hq/client": "0.8.0",
+    "@arcium-hq/client": "^0.9.7",
     "@coral-xyz/anchor": "0.32.1",
     "@solana-mobile/wallet-adapter-mobile": "^2.2.5",
     "@solana/wallet-adapter-base": "^0.9.25",

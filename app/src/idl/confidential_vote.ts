@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/confidential_vote.json`.
  */
 export type ConfidentialVote = {
-  "address": "FgdtNPPpih9U8JRr4dNWT1qoGymBxxKz3HzaAKvk6aJj",
+  "address": "BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2",
   "metadata": {
     "name": "confidentialVote",
     "version": "0.1.0",
@@ -26,32 +26,6 @@ export type ConfidentialVote = {
       ],
       "accounts": [
         {
-          "name": "proposal",
-          "writable": true
-        },
-        {
-          "name": "encryptedTally",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  97,
-                  108,
-                  108,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "proposal"
-              }
-            ]
-          }
-        },
-        {
           "name": "arciumProgram",
           "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
@@ -70,6 +44,42 @@ export type ConfidentialVote = {
         {
           "name": "instructionsSysvar",
           "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "proposal",
+          "writable": true
+        },
+        {
+          "name": "encryptedTally",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  110,
+                  99,
+                  114,
+                  121,
+                  112,
+                  116,
+                  101,
+                  100,
+                  95,
+                  116,
+                  97,
+                  108,
+                  108,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal"
+              }
+            ]
+          }
         }
       ],
       "args": [
@@ -83,7 +93,13 @@ export type ConfidentialVote = {
                   "kind": "type",
                   "type": {
                     "defined": {
-                      "name": "applyVoteOutput"
+                      "name": "callbackOutput",
+                      "generics": [
+                        {
+                          "kind": "const",
+                          "value": "272"
+                        }
+                      ]
                     }
                   }
                 }
@@ -107,7 +123,7 @@ export type ConfidentialVote = {
       ],
       "accounts": [
         {
-          "name": "payer",
+          "name": "voter",
           "writable": true,
           "signer": true
         },
@@ -123,6 +139,16 @@ export type ConfidentialVote = {
               {
                 "kind": "const",
                 "value": [
+                  101,
+                  110,
+                  99,
+                  114,
+                  121,
+                  112,
+                  116,
+                  101,
+                  100,
+                  95,
                   116,
                   97,
                   108,
@@ -135,13 +161,72 @@ export type ConfidentialVote = {
                 "path": "proposal"
               }
             ]
-          },
-          "relations": [
-            "proposal"
-          ]
+          }
         },
         {
-          "name": "signPdaAccount",
+          "name": "voterRecord",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  111,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "voter"
+              },
+              {
+                "kind": "account",
+                "path": "proposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "voterToken",
+          "optional": true
+        },
+        {
+          "name": "arciumProgram",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
+        },
+        {
+          "name": "mxeAccount",
+          "writable": true
+        },
+        {
+          "name": "cluster",
+          "writable": true
+        },
+        {
+          "name": "compDefAccount",
+          "writable": true
+        },
+        {
+          "name": "mempoolAccount",
+          "writable": true
+        },
+        {
+          "name": "execpoolAccount",
+          "writable": true
+        },
+        {
+          "name": "poolAccount",
+          "writable": true
+        },
+        {
+          "name": "clockAccount",
+          "writable": true
+        },
+        {
+          "name": "signerAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -173,51 +258,15 @@ export type ConfidentialVote = {
           }
         },
         {
-          "name": "mxeAccount"
-        },
-        {
-          "name": "mempoolAccount",
+          "name": "compAccount",
           "writable": true
-        },
-        {
-          "name": "executingPool",
-          "writable": true
-        },
-        {
-          "name": "computationAccount",
-          "writable": true
-        },
-        {
-          "name": "compDefAccount"
-        },
-        {
-          "name": "clusterAccount",
-          "writable": true
-        },
-        {
-          "name": "poolAccount",
-          "writable": true,
-          "address": "G2sRWJvi3xoyh5k2gY49eG9L8YhAEWQPtNb1zb1GXTtC"
-        },
-        {
-          "name": "clockAccount",
-          "writable": true,
-          "address": "7EbMUTLo5DjdzbN7s8BXeZwXzEwNQb1hScfRvWg8a6ot"
         },
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "arciumProgram",
-          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         }
       ],
       "args": [
-        {
-          "name": "computationOffset",
-          "type": "u64"
-        },
         {
           "name": "voterX25519Pubkey",
           "type": {
@@ -239,6 +288,10 @@ export type ConfidentialVote = {
               32
             ]
           }
+        },
+        {
+          "name": "computationOffset",
+          "type": "u64"
         }
       ]
     },
@@ -255,11 +308,6 @@ export type ConfidentialVote = {
         22
       ],
       "accounts": [
-        {
-          "name": "creator",
-          "writable": true,
-          "signer": true
-        },
         {
           "name": "proposal",
           "writable": true,
@@ -284,32 +332,18 @@ export type ConfidentialVote = {
               },
               {
                 "kind": "arg",
-                "path": "proposalId"
+                "path": "proposalSalt"
               }
             ]
           }
         },
         {
-          "name": "encryptedTally",
+          "name": "creator",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  97,
-                  108,
-                  108,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "proposal"
-              }
-            ]
-          }
+          "signer": true
+        },
+        {
+          "name": "mint"
         },
         {
           "name": "systemProgram",
@@ -318,34 +352,45 @@ export type ConfidentialVote = {
       ],
       "args": [
         {
-          "name": "proposalId",
-          "type": "u64"
+          "name": "proposalSalt",
+          "type": {
+            "array": [
+              "u8",
+              8
+            ]
+          }
         },
         {
           "name": "title",
-          "type": "string"
+          "type": {
+            "array": [
+              "u8",
+              128
+            ]
+          }
         },
         {
           "name": "options",
           "type": {
-            "vec": "string"
+            "vec": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
           }
         },
         {
-          "name": "startTs",
+          "name": "startTime",
           "type": "i64"
         },
         {
-          "name": "endTs",
+          "name": "endTime",
           "type": "i64"
         },
         {
           "name": "eligibilityMode",
           "type": "u8"
-        },
-        {
-          "name": "requiredMint",
-          "type": "pubkey"
         },
         {
           "name": "whitelist",
@@ -369,9 +414,12 @@ export type ConfidentialVote = {
       ],
       "accounts": [
         {
-          "name": "payer",
+          "name": "creator",
           "writable": true,
-          "signer": true
+          "signer": true,
+          "relations": [
+            "proposal"
+          ]
         },
         {
           "name": "proposal",
@@ -379,12 +427,21 @@ export type ConfidentialVote = {
         },
         {
           "name": "encryptedTally",
-          "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
+                  101,
+                  110,
+                  99,
+                  114,
+                  121,
+                  112,
+                  116,
+                  101,
+                  100,
+                  95,
                   116,
                   97,
                   108,
@@ -397,13 +454,42 @@ export type ConfidentialVote = {
                 "path": "proposal"
               }
             ]
-          },
-          "relations": [
-            "proposal"
-          ]
+          }
         },
         {
-          "name": "signPdaAccount",
+          "name": "arciumProgram",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
+        },
+        {
+          "name": "mxeAccount",
+          "writable": true
+        },
+        {
+          "name": "cluster",
+          "writable": true
+        },
+        {
+          "name": "compDefAccount",
+          "writable": true
+        },
+        {
+          "name": "mempoolAccount",
+          "writable": true
+        },
+        {
+          "name": "execpoolAccount",
+          "writable": true
+        },
+        {
+          "name": "poolAccount",
+          "writable": true
+        },
+        {
+          "name": "clockAccount",
+          "writable": true
+        },
+        {
+          "name": "signerAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -435,44 +521,12 @@ export type ConfidentialVote = {
           }
         },
         {
-          "name": "mxeAccount"
-        },
-        {
-          "name": "mempoolAccount",
+          "name": "compAccount",
           "writable": true
-        },
-        {
-          "name": "executingPool",
-          "writable": true
-        },
-        {
-          "name": "computationAccount",
-          "writable": true
-        },
-        {
-          "name": "compDefAccount"
-        },
-        {
-          "name": "clusterAccount",
-          "writable": true
-        },
-        {
-          "name": "poolAccount",
-          "writable": true,
-          "address": "G2sRWJvi3xoyh5k2gY49eG9L8YhAEWQPtNb1zb1GXTtC"
-        },
-        {
-          "name": "clockAccount",
-          "writable": true,
-          "address": "7EbMUTLo5DjdzbN7s8BXeZwXzEwNQb1hScfRvWg8a6ot"
         },
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "arciumProgram",
-          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         }
       ],
       "args": [
@@ -501,11 +555,15 @@ export type ConfidentialVote = {
           "signer": true
         },
         {
+          "name": "arciumProgram",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
+        },
+        {
           "name": "mxeAccount",
           "writable": true
         },
         {
-          "name": "compDefAccount",
+          "name": "compDefAcc",
           "writable": true
         },
         {
@@ -514,10 +572,6 @@ export type ConfidentialVote = {
         },
         {
           "name": "lutProgram"
-        },
-        {
-          "name": "arciumProgram",
-          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "systemProgram",
@@ -545,11 +599,15 @@ export type ConfidentialVote = {
           "signer": true
         },
         {
+          "name": "arciumProgram",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
+        },
+        {
           "name": "mxeAccount",
           "writable": true
         },
         {
-          "name": "compDefAccount",
+          "name": "compDefAcc",
           "writable": true
         },
         {
@@ -558,10 +616,6 @@ export type ConfidentialVote = {
         },
         {
           "name": "lutProgram"
-        },
-        {
-          "name": "arciumProgram",
-          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "systemProgram",
@@ -589,11 +643,15 @@ export type ConfidentialVote = {
           "signer": true
         },
         {
+          "name": "arciumProgram",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
+        },
+        {
           "name": "mxeAccount",
           "writable": true
         },
         {
-          "name": "compDefAccount",
+          "name": "compDefAcc",
           "writable": true
         },
         {
@@ -604,10 +662,6 @@ export type ConfidentialVote = {
           "name": "lutProgram"
         },
         {
-          "name": "arciumProgram",
-          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
-        },
-        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
@@ -615,16 +669,16 @@ export type ConfidentialVote = {
       "args": []
     },
     {
-      "name": "initTally",
+      "name": "initSignerAccount",
       "discriminator": [
-        87,
-        83,
-        59,
-        73,
-        151,
-        157,
-        116,
-        215
+        182,
+        115,
+        253,
+        47,
+        131,
+        76,
+        171,
+        81
       ],
       "accounts": [
         {
@@ -633,36 +687,7 @@ export type ConfidentialVote = {
           "signer": true
         },
         {
-          "name": "proposal",
-          "writable": true
-        },
-        {
-          "name": "encryptedTally",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  97,
-                  108,
-                  108,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "proposal"
-              }
-            ]
-          },
-          "relations": [
-            "proposal"
-          ]
-        },
-        {
-          "name": "signPdaAccount",
+          "name": "signerAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -694,51 +719,143 @@ export type ConfidentialVote = {
           }
         },
         {
-          "name": "mxeAccount"
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initTally",
+      "discriminator": [
+        87,
+        83,
+        59,
+        73,
+        151,
+        157,
+        116,
+        215
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "proposal",
+          "writable": true
+        },
+        {
+          "name": "encryptedTally",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  110,
+                  99,
+                  114,
+                  121,
+                  112,
+                  116,
+                  101,
+                  100,
+                  95,
+                  116,
+                  97,
+                  108,
+                  108,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "arciumProgram",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
+        },
+        {
+          "name": "mxeAccount",
+          "writable": true
+        },
+        {
+          "name": "cluster",
+          "writable": true
+        },
+        {
+          "name": "compDefAccount",
+          "writable": true
         },
         {
           "name": "mempoolAccount",
           "writable": true
         },
         {
-          "name": "executingPool",
-          "writable": true
-        },
-        {
-          "name": "computationAccount",
-          "writable": true
-        },
-        {
-          "name": "compDefAccount"
-        },
-        {
-          "name": "clusterAccount",
+          "name": "execpoolAccount",
           "writable": true
         },
         {
           "name": "poolAccount",
-          "writable": true,
-          "address": "G2sRWJvi3xoyh5k2gY49eG9L8YhAEWQPtNb1zb1GXTtC"
+          "writable": true
         },
         {
           "name": "clockAccount",
+          "writable": true
+        },
+        {
+          "name": "signerAccount",
           "writable": true,
-          "address": "7EbMUTLo5DjdzbN7s8BXeZwXzEwNQb1hScfRvWg8a6ot"
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  65,
+                  114,
+                  99,
+                  105,
+                  117,
+                  109,
+                  83,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  65,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "compAccount",
+          "writable": true
         },
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "arciumProgram",
-          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         }
       ],
       "args": [
-        {
-          "name": "computationOffset",
-          "type": "u64"
-        },
         {
           "name": "creatorX25519Pubkey",
           "type": {
@@ -762,6 +879,10 @@ export type ConfidentialVote = {
               ]
             }
           }
+        },
+        {
+          "name": "computationOffset",
+          "type": "u64"
         }
       ]
     },
@@ -778,32 +899,6 @@ export type ConfidentialVote = {
         189
       ],
       "accounts": [
-        {
-          "name": "proposal",
-          "writable": true
-        },
-        {
-          "name": "encryptedTally",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  97,
-                  108,
-                  108,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "proposal"
-              }
-            ]
-          }
-        },
         {
           "name": "arciumProgram",
           "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
@@ -823,6 +918,42 @@ export type ConfidentialVote = {
         {
           "name": "instructionsSysvar",
           "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "proposal",
+          "writable": true
+        },
+        {
+          "name": "encryptedTally",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  110,
+                  99,
+                  114,
+                  121,
+                  112,
+                  116,
+                  101,
+                  100,
+                  95,
+                  116,
+                  97,
+                  108,
+                  108,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal"
+              }
+            ]
+          }
         }
       ],
       "args": [
@@ -836,7 +967,13 @@ export type ConfidentialVote = {
                   "kind": "type",
                   "type": {
                     "defined": {
-                      "name": "initTallyOutput"
+                      "name": "callbackOutput",
+                      "generics": [
+                        {
+                          "kind": "const",
+                          "value": "272"
+                        }
+                      ]
                     }
                   }
                 }
@@ -860,10 +997,6 @@ export type ConfidentialVote = {
       ],
       "accounts": [
         {
-          "name": "proposal",
-          "writable": true
-        },
-        {
           "name": "arciumProgram",
           "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
@@ -882,6 +1015,10 @@ export type ConfidentialVote = {
         {
           "name": "instructionsSysvar",
           "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "proposal",
+          "writable": true
         }
       ],
       "args": [
@@ -895,7 +1032,13 @@ export type ConfidentialVote = {
                   "kind": "type",
                   "type": {
                     "defined": {
-                      "name": "revealTallyOutput"
+                      "name": "callbackOutput",
+                      "generics": [
+                        {
+                          "kind": "const",
+                          "value": "64"
+                        }
+                      ]
                     }
                   }
                 }
@@ -907,32 +1050,6 @@ export type ConfidentialVote = {
     }
   ],
   "accounts": [
-    {
-      "name": "arciumSignerAccount",
-      "discriminator": [
-        214,
-        157,
-        122,
-        114,
-        117,
-        44,
-        214,
-        74
-      ]
-    },
-    {
-      "name": "clockAccount",
-      "discriminator": [
-        152,
-        171,
-        158,
-        195,
-        75,
-        61,
-        51,
-        8
-      ]
-    },
     {
       "name": "cluster",
       "discriminator": [
@@ -973,19 +1090,6 @@ export type ConfidentialVote = {
       ]
     },
     {
-      "name": "feePool",
-      "discriminator": [
-        172,
-        38,
-        77,
-        146,
-        148,
-        5,
-        51,
-        242
-      ]
-    },
-    {
       "name": "mxeAccount",
       "discriminator": [
         103,
@@ -1010,138 +1114,208 @@ export type ConfidentialVote = {
         53,
         33
       ]
+    },
+    {
+      "name": "voterRecord",
+      "discriminator": [
+        178,
+        96,
+        138,
+        116,
+        143,
+        202,
+        115,
+        33
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "applyVoteResolved",
+      "discriminator": [
+        201,
+        156,
+        63,
+        158,
+        237,
+        83,
+        116,
+        70
+      ]
+    },
+    {
+      "name": "encryptedVoteQueued",
+      "discriminator": [
+        22,
+        118,
+        146,
+        119,
+        74,
+        130,
+        205,
+        98
+      ]
+    },
+    {
+      "name": "initTallyQueued",
+      "discriminator": [
+        22,
+        71,
+        32,
+        219,
+        101,
+        21,
+        56,
+        49
+      ]
+    },
+    {
+      "name": "revealQueued",
+      "discriminator": [
+        220,
+        184,
+        56,
+        249,
+        161,
+        33,
+        209,
+        222
+      ]
+    },
+    {
+      "name": "tallyRevealed",
+      "discriminator": [
+        192,
+        81,
+        92,
+        234,
+        244,
+        70,
+        132,
+        123
+      ]
     }
   ],
   "errors": [
     {
       "code": 6000,
-      "name": "titleTooLong",
-      "msg": "Title exceeds max length"
+      "name": "alreadyInitialized",
+      "msg": "Already initialized"
     },
     {
       "code": 6001,
-      "name": "notEnoughOptions",
-      "msg": "Not enough options"
-    },
-    {
-      "code": 6002,
-      "name": "tooManyOptions",
-      "msg": "Too many options"
-    },
-    {
-      "code": 6003,
-      "name": "optionTooLong",
-      "msg": "Option exceeds max length"
-    },
-    {
-      "code": 6004,
-      "name": "invalidTimeRange",
-      "msg": "Invalid time range"
-    },
-    {
-      "code": 6005,
-      "name": "alreadyInitialized",
-      "msg": "Tally already initialized"
-    },
-    {
-      "code": 6006,
-      "name": "votingNotStarted",
-      "msg": "Voting has not started"
-    },
-    {
-      "code": 6007,
-      "name": "votingEnded",
-      "msg": "Voting has ended"
-    },
-    {
-      "code": 6008,
-      "name": "votingNotEnded",
-      "msg": "Voting has not ended yet"
-    },
-    {
-      "code": 6009,
-      "name": "alreadyFinalized",
-      "msg": "Proposal already finalized"
-    },
-    {
-      "code": 6010,
       "name": "tallyNotInitialized",
       "msg": "Tally not initialized"
     },
     {
-      "code": 6011,
-      "name": "clusterNotSet",
-      "msg": "Cluster not set"
+      "code": 6002,
+      "name": "votingNotStarted",
+      "msg": "Voting has not started"
     },
     {
-      "code": 6012,
-      "name": "abortedComputation",
-      "msg": "Computation aborted"
+      "code": 6003,
+      "name": "votingEnded",
+      "msg": "Voting has ended"
     },
     {
-      "code": 6013,
-      "name": "computationFailed",
-      "msg": "Computation failed"
+      "code": 6004,
+      "name": "votingNotEnded",
+      "msg": "Voting has not ended yet"
     },
     {
-      "code": 6014,
-      "name": "invalidEncryptedPayload",
-      "msg": "Invalid encrypted payload"
+      "code": 6005,
+      "name": "alreadyFinalized",
+      "msg": "Already finalized"
     },
     {
-      "code": 6015,
-      "name": "invalidEligibilityMode",
-      "msg": "Invalid eligibility mode"
+      "code": 6006,
+      "name": "invalidResults",
+      "msg": "Invalid results length"
     },
     {
-      "code": 6016,
-      "name": "whitelistRequired",
-      "msg": "Whitelist is required for whitelist-only proposals"
+      "code": 6007,
+      "name": "notWhitelisted",
+      "msg": "Voter is not whitelisted"
     },
     {
-      "code": 6017,
-      "name": "whitelistTooLarge",
-      "msg": "Whitelist is too large"
+      "code": 6008,
+      "name": "tokenAccountRequired",
+      "msg": "Token account required for this proposal"
     },
     {
-      "code": 6018,
-      "name": "whitelistNotAllowed",
-      "msg": "Whitelist is only allowed for whitelist-only proposals"
+      "code": 6009,
+      "name": "invalidMint",
+      "msg": "Token mint does not match proposal"
     },
     {
-      "code": 6019,
-      "name": "requiredMintMissing",
-      "msg": "Required mint missing for token-gated proposals"
-    },
-    {
-      "code": 6020,
-      "name": "notEligible",
-      "msg": "Wallet is not eligible to vote"
-    },
-    {
-      "code": 6021,
-      "name": "missingTokenAccount",
-      "msg": "Missing token account in remaining accounts"
-    },
-    {
-      "code": 6022,
-      "name": "invalidTokenAccount",
-      "msg": "Invalid token account"
-    },
-    {
-      "code": 6023,
+      "code": 6010,
       "name": "invalidTokenOwner",
       "msg": "Token account owner mismatch"
     },
     {
-      "code": 6024,
-      "name": "invalidTokenMint",
-      "msg": "Token account mint mismatch"
+      "code": 6011,
+      "name": "insufficientTokens",
+      "msg": "Insufficient token balance"
     },
     {
-      "code": 6025,
-      "name": "insufficientTokenBalance",
-      "msg": "Insufficient token balance"
+      "code": 6012,
+      "name": "invalidOptions",
+      "msg": "Invalid proposal options"
+    },
+    {
+      "code": 6013,
+      "name": "whitelistTooLarge",
+      "msg": "Whitelist is too large"
+    },
+    {
+      "code": 6014,
+      "name": "invalidVotingWindow",
+      "msg": "Invalid voting window"
+    },
+    {
+      "code": 6015,
+      "name": "invalidEncryptedPayload",
+      "msg": "Invalid encrypted payload"
+    },
+    {
+      "code": 6016,
+      "name": "invalidTallyAccount",
+      "msg": "Invalid encrypted tally account"
+    },
+    {
+      "code": 6017,
+      "name": "mathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6018,
+      "name": "pendingVotes",
+      "msg": "Encrypted votes are still waiting for Arcium application"
+    },
+    {
+      "code": 6019,
+      "name": "revealNotRequested",
+      "msg": "Reveal computation has not been requested"
+    },
+    {
+      "code": 6020,
+      "name": "invalidCallbackOutput",
+      "msg": "Invalid callback output"
+    },
+    {
+      "code": 6021,
+      "name": "invalidCallbackSignature",
+      "msg": "Invalid callback signature"
+    },
+    {
+      "code": 6022,
+      "name": "computationFailed",
+      "msg": "Arcium computation failed"
+    },
+    {
+      "code": 6023,
+      "name": "clusterNotSet",
+      "msg": "Arcium cluster is not set"
     }
   ],
   "types": [
@@ -1170,39 +1344,17 @@ export type ConfidentialVote = {
       }
     },
     {
-      "name": "applyVoteOutput",
-      "docs": [
-        "The output of the callback instruction. Provided as a struct with ordered fields",
-        "as anchor does not support tuples and tuple structs yet."
-      ],
+      "name": "applyVoteResolved",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "field0",
-            "type": {
-              "defined": {
-                "name": "mxeEncryptedStruct",
-                "generics": [
-                  {
-                    "kind": "const",
-                    "value": "8"
-                  }
-                ]
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "arciumSignerAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
+            "name": "proposal",
+            "type": "pubkey"
+          },
           {
-            "name": "bump",
-            "type": "u8"
+            "name": "appliedVoteCount",
+            "type": "u64"
           }
         ]
       }
@@ -1219,6 +1371,19 @@ export type ConfidentialVote = {
             ]
           }
         ]
+      }
+    },
+    {
+      "name": "callbackOutput",
+      "generics": [
+        {
+          "kind": "const",
+          "name": "n",
+          "type": "usize"
+        }
+      ],
+      "type": {
+        "kind": "struct"
       }
     },
     {
@@ -1255,45 +1420,6 @@ export type ConfidentialVote = {
                 }
               }
             ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "clockAccount",
-      "docs": [
-        "An account storing the current network epoch"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "startEpoch",
-            "type": {
-              "defined": {
-                "name": "epoch"
-              }
-            }
-          },
-          {
-            "name": "currentEpoch",
-            "type": {
-              "defined": {
-                "name": "epoch"
-              }
-            }
-          },
-          {
-            "name": "startEpochTimestamp",
-            "type": {
-              "defined": {
-                "name": "timestamp"
-              }
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
           }
         ]
       }
@@ -1506,22 +1632,56 @@ export type ConfidentialVote = {
             "type": "u128"
           },
           {
-            "name": "tallyCiphertexts",
+            "name": "encryptedTally",
+            "type": {
+              "vec": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
+          },
+          {
+            "name": "lastEncryptedVote",
             "type": {
               "array": [
-                {
-                  "array": [
-                    "u8",
-                    32
-                  ]
-                },
-                8
+                "u8",
+                32
               ]
             }
           },
           {
+            "name": "appliedVoteCount",
+            "type": "u64"
+          },
+          {
+            "name": "pendingVoteCount",
+            "type": "u64"
+          },
+          {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "encryptedVoteQueued",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "proposal",
+            "type": "pubkey"
+          },
+          {
+            "name": "voterRecord",
+            "type": "pubkey"
+          },
+          {
+            "name": "computationOffset",
+            "type": "u64"
           }
         ]
       }
@@ -1539,39 +1699,17 @@ export type ConfidentialVote = {
       }
     },
     {
-      "name": "feePool",
+      "name": "initTallyQueued",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "bump",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "initTallyOutput",
-      "docs": [
-        "The output of the callback instruction. Provided as a struct with ordered fields",
-        "as anchor does not support tuples and tuple structs yet."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
+            "name": "proposal",
+            "type": "pubkey"
+          },
           {
-            "name": "field0",
-            "type": {
-              "defined": {
-                "name": "mxeEncryptedStruct",
-                "generics": [
-                  {
-                    "kind": "const",
-                    "value": "8"
-                  }
-                ]
-              }
-            }
+            "name": "computationOffset",
+            "type": "u64"
           }
         ]
       }
@@ -1669,41 +1807,6 @@ export type ConfidentialVote = {
       }
     },
     {
-      "name": "mxeEncryptedStruct",
-      "generics": [
-        {
-          "kind": "const",
-          "name": "len",
-          "type": "usize"
-        }
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "nonce",
-            "type": "u128"
-          },
-          {
-            "name": "ciphertexts",
-            "type": {
-              "array": [
-                {
-                  "array": [
-                    "u8",
-                    32
-                  ]
-                },
-                {
-                  "generic": "len"
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "mxeStatus",
       "docs": [
         "The status of an MXE."
@@ -1715,7 +1818,7 @@ export type ConfidentialVote = {
             "name": "active"
           },
           {
-            "name": "recovery"
+            "name": "migration"
           }
         ]
       }
@@ -1947,30 +2050,36 @@ export type ConfidentialVote = {
             "type": "pubkey"
           },
           {
-            "name": "proposalId",
-            "type": "u64"
-          },
-          {
             "name": "title",
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
           },
           {
             "name": "options",
             "type": {
-              "vec": "string"
+              "vec": {
+                "array": [
+                  "u8",
+                  128
+                ]
+              }
             }
           },
           {
-            "name": "startTs",
+            "name": "startTime",
             "type": "i64"
           },
           {
-            "name": "endTs",
+            "name": "endTime",
             "type": "i64"
           },
           {
-            "name": "votesCast",
-            "type": "u32"
+            "name": "eligibilityMode",
+            "type": "u8"
           },
           {
             "name": "tallyInitialized",
@@ -1981,33 +2090,25 @@ export type ConfidentialVote = {
             "type": "bool"
           },
           {
-            "name": "encryptedTally",
+            "name": "revealRequested",
+            "type": "bool"
+          },
+          {
+            "name": "finalizeSignature",
             "type": "pubkey"
           },
           {
-            "name": "finalTally",
+            "name": "results",
             "type": {
-              "array": [
-                "u64",
-                8
-              ]
+              "vec": "u64"
             }
           },
           {
-            "name": "finalizationSig",
-            "type": {
-              "array": [
-                "u8",
-                64
-              ]
-            }
-          },
-          {
-            "name": "eligibilityMode",
+            "name": "bump",
             "type": "u8"
           },
           {
-            "name": "requiredMint",
+            "name": "mint",
             "type": "pubkey"
           },
           {
@@ -2017,29 +2118,36 @@ export type ConfidentialVote = {
             }
           },
           {
-            "name": "bump",
+            "name": "version",
             "type": "u8"
+          },
+          {
+            "name": "voteCount",
+            "type": "u64"
+          },
+          {
+            "name": "lastApplyComputationOffset",
+            "type": "u64"
+          },
+          {
+            "name": "lastRevealComputationOffset",
+            "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "revealTallyOutput",
-      "docs": [
-        "The output of the callback instruction. Provided as a struct with ordered fields",
-        "as anchor does not support tuples and tuple structs yet."
-      ],
+      "name": "revealQueued",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "field0",
-            "type": {
-              "array": [
-                "u64",
-                8
-              ]
-            }
+            "name": "proposal",
+            "type": "pubkey"
+          },
+          {
+            "name": "computationOffset",
+            "type": "u64"
           }
         ]
       }
@@ -2122,13 +2230,13 @@ export type ConfidentialVote = {
       }
     },
     {
-      "name": "timestamp",
+      "name": "tallyRevealed",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "timestamp",
-            "type": "u64"
+            "name": "proposal",
+            "type": "pubkey"
           }
         ]
       }
@@ -2176,6 +2284,14 @@ export type ConfidentialVote = {
           }
         ]
       }
+    },
+    {
+      "name": "voterRecord",
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
     }
   ]
 };
+

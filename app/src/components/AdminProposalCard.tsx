@@ -14,6 +14,8 @@ export function AdminProposalCard({
 }) {
     const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
     const [message, setMessage] = useState("");
+    const hasPendingVotes = proposal.pendingEncryptedVotes > 0;
+    const canFinalize = proposal.tallyInitialized && proposal.status === "Ended" && !proposal.finalized && !proposal.revealRequested && !hasPendingVotes;
 
     const handleInitTally = async () => {
         if (!provider) return setMessage("Connect wallet first");
@@ -44,34 +46,54 @@ export function AdminProposalCard({
 
     const handleFinalize = async () => {
         if (!provider) return setMessage("Connect wallet first");
+        if (hasPendingVotes) {
+            setStatus("idle");
+            setMessage(`Waiting for Arcium to apply ${proposal.pendingEncryptedVotes} encrypted vote${proposal.pendingEncryptedVotes === 1 ? "" : "s"}.`);
+            return;
+        }
+        if (proposal.revealRequested) {
+            setStatus("idle");
+            setMessage("Reveal already requested. Waiting for Arcium to publish final results.");
+            return;
+        }
         try {
             setStatus("sending");
-            setMessage("Finalizing tally computation...");
+            setMessage("Requesting Arcium reveal...");
             const { finalizeEncryptedTally } = await import("../lib/arcium");
             await finalizeEncryptedTally({
                 provider,
                 proposalPubkey: new PublicKey(proposal.address),
-                // results: Array(proposal.options.length).fill(10) // Removed
             });
             setStatus("success");
-            setMessage("Tally finalized & revealed!");
+            setMessage("Reveal requested. Results will appear after Arcium callback confirms.");
             onUpdate?.();
         } catch (err: any) {
             console.error(err);
             setStatus("error");
 
             const errMsg = err instanceof Error ? err.message : String(err);
-            if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports")) {
-                setMessage("Insufficient SOL to finalize (Rent/Gas).");
+            if (errMsg.includes("PendingVotes")) {
+                setMessage("Arcium is still applying encrypted votes. Try again once pending votes clear.");
+            } else if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports")) {
+                setMessage("Insufficient SOL to request reveal (Rent/Gas).");
             } else {
                 setMessage(errMsg || "Finalization failed");
             }
         }
     };
 
+
     const statusColor =
         proposal.status === "Active" ? "status-active" :
             proposal.status === "Ended" ? "status-ended" : "status-upcoming";
+
+    const revealNote = hasPendingVotes
+        ? `Waiting for Arcium: ${proposal.pendingEncryptedVotes} encrypted vote${proposal.pendingEncryptedVotes === 1 ? "" : "s"} pending.`
+        : proposal.revealRequested && !proposal.finalized
+            ? "Reveal requested. Waiting for Arcium final callback."
+            : canFinalize
+                ? "Voting ended. You can now request reveal."
+                : "";
 
     return (
         <div className="proposal-card" style={{ height: 'auto', display: 'flex', flexDirection: 'column' }}>
@@ -92,10 +114,9 @@ export function AdminProposalCard({
 
             <div className="card-content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div className="card-footer" style={{ marginTop: 'auto', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {/* Action Logic */}
                     {!proposal.tallyInitialized && (
                         <div className="admin-action-group" style={{ width: '100%' }}>
-                            <p className="kpi" style={{ marginBottom: '8px' }}>⚠️ Tally not initialized</p>
+                            <p className="kpi" style={{ marginBottom: '8px' }}>Tally not initialized</p>
                             <button
                                 className="cta full-width"
                                 onClick={handleInitTally}
@@ -108,12 +129,21 @@ export function AdminProposalCard({
 
                     {proposal.tallyInitialized && proposal.status === "Ended" && !proposal.finalized && (
                         <div className="admin-action-group" style={{ width: '100%' }}>
+                            {revealNote && <p className="kpi" style={{ marginBottom: '8px' }}>{revealNote}</p>}
                             <button
                                 className="cta full-width"
-                                onClick={handleFinalize}
-                                disabled={status === "sending"}
+                                onClick={() => handleFinalize()}
+                                disabled={status === "sending" || hasPendingVotes || proposal.revealRequested}
                             >
-                                {status === "sending" ? "Finalizing..." : "Finalize & Reveal"}
+                                {status === "sending" ? "Requesting Reveal..." : proposal.revealRequested ? "Reveal Pending" : hasPendingVotes ? "Waiting for Arcium" : "Finalize & Reveal"}
+                            </button>
+                            <button
+                                className="button-ghost full-width"
+                                onClick={() => onUpdate?.()}
+                                disabled={status === "sending"}
+                                style={{ marginTop: '8px' }}
+                            >
+                                Refresh Status
                             </button>
                         </div>
                     )}
@@ -133,7 +163,7 @@ export function AdminProposalCard({
                                 <button
                                     key={idx}
                                     className="option-tile"
-                                    disabled={true} // Admin view is read-only for options usually
+                                    disabled={true}
                                     style={{
                                         display: 'block',
                                         width: '100%',

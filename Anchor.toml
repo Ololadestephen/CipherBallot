@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-confidential_vote = "Bc7u1THDttJMjzbdhestYiXPqq8XxCJMpfeDzU54h66L"
+confidential_vote = "BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2"
 
 [programs.devnet]
-confidential_vote = "Bc7u1THDttJMjzbdhestYiXPqq8XxCJMpfeDzU54h66L"
+confidential_vote = "BkAZRNoDCQ6SKuyqMVTw3JYVT1TcEempjMRUQDC1oLE2"
 
 [registry]
 url = "https://api.apr.dev"
