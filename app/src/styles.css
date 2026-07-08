@@ -208,9 +208,7 @@ main {
   margin-top: 26px;
 }
 
-.cta,
-.wallet-adapter-button,
-.wallet-adapter-button-trigger {
+.cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -228,9 +226,7 @@ main {
   box-shadow: 0 4px 12px rgba(123, 97, 255, 0.2);
 }
 
-.cta:hover,
-.wallet-adapter-button:hover,
-.wallet-adapter-button-trigger:hover {
+.cta:hover {
   transform: translateY(-2px);
   background: var(--primary-hover) !important;
   box-shadow: 0 6px 16px rgba(123, 97, 255, 0.4);
@@ -928,9 +924,13 @@ textarea::placeholder {
 }
 
 .wizard-step-content h4 {
-  margin: 0 0 8px;
+  margin: 36px 0 16px;
   font-size: 18px;
   color: #fff;
+}
+
+.wizard-step-content h4:first-of-type {
+  margin-top: 0;
 }
 
 .description-title {

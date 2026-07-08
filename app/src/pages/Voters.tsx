@@ -1,103 +1,56 @@
 import { useEffect, useMemo, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import * as anchor from "@coral-xyz/anchor";
-import {
-  fetchProposals,
-  type ProposalView
-} from "../lib/proposals";
+import { useNavigate } from "react-router-dom";
+import { BOT_CHAIN, fetchProposals, type ProposalView, useEvmWallet } from "../lib/evm";
 import { ProposalCard } from "../components/ProposalCard";
+import { RevealReminderPanel } from "../components/RevealReminderPanel";
 
 export default function Voters() {
-  const { connection } = useConnection();
-  const wallet = useWallet();
+  const wallet = useEvmWallet();
+  const navigate = useNavigate();
   const [allProposals, setAllProposals] = useState<ProposalView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [arciumStatus, setArciumStatus] = useState<string>("Initializing...");
-  const [filter, setFilter] = useState<"All" | "Active" | "Ended" | "My Whitelisted">("All");
+  const [filter, setFilter] = useState<"All" | "Active" | "Reveal" | "Tallying" | "Finalized">("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 6;
+
+  const loadProposals = async (showLoading = allProposals.length === 0) => {
+    if (showLoading) setLoading(true);
+    try {
+      setAllProposals(await fetchProposals());
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadProposals(true);
+    const intervalId = window.setInterval(() => void loadProposals(false), 60000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const filteredProposals = useMemo(() => {
-    let result = [...allProposals];
-
-    // Filter
-    if (filter === "Active") {
-      result = result.filter(p => p.status === "Active");
-    } else if (filter === "Ended") {
-      result = result.filter(p => p.status === "Ended");
-    } else if (filter === "My Whitelisted") {
-      if (!wallet.publicKey) return [];
-      const myKey = wallet.publicKey.toBase58();
-
-      result = result.filter(p => p.whitelist?.includes(myKey));
+    let result = allProposals;
+    if (filter !== "All") {
+      result = result.filter((proposal) => proposal.status === filter);
     }
-
-    // Sort: Active/Upcoming first, Ended last.
-    // Within groups, maybe by startTs descending (newest first).
-    result.sort((a, b) => {
-      const isEndedA = a.status === "Ended" ? 1 : 0;
-      const isEndedB = b.status === "Ended" ? 1 : 0;
-      if (isEndedA !== isEndedB) return isEndedA - isEndedB; // Ended goes last (1 > 0)
-      return b.startTs - a.startTs; // Newest first
-    });
-
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p => p.title.toLowerCase().includes(q) || String(p.id) === q);
+    }
     return result;
-  }, [allProposals, filter, wallet.publicKey]);
+  }, [allProposals, filter, searchQuery]);
 
-  const provider = useMemo(() => {
-    if (!wallet.publicKey || !wallet.signTransaction || !wallet.signAllTransactions) {
-      return null;
-    }
-    return new anchor.AnchorProvider(connection, wallet as anchor.Wallet, {
-      commitment: "confirmed"
-    });
-  }, [connection, wallet]);
-
-  // Initial data load
   useEffect(() => {
-    let alive = true;
-    const run = async () => {
-      try {
-        const rows = await fetchProposals(connection);
-        if (!alive) return;
-        setAllProposals(rows);
-      } catch (err) {
-        console.error("Failed to fetch proposals", err);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    };
-    run();
+    setCurrentPage(1);
+  }, [filter, searchQuery]);
 
-    // Poll for updates
-    const intervalId = window.setInterval(() => {
-      if (!alive) return;
-      run();
-    }, 5000);
-
-    return () => {
-      alive = false;
-      window.clearInterval(intervalId);
-    };
-  }, [connection]);
-
-  // Arcium readiness check (global status)
-  useEffect(() => {
-    let alive = true;
-    const checkArcium = async () => {
-      if (!provider) {
-        setArciumStatus("Connect wallet to check Arcium status");
-        return;
-      }
-      try {
-        const { checkArciumReadiness } = await import("../lib/arcium");
-        const status = await checkArciumReadiness(provider);
-        if (!alive) return;
-        setArciumStatus(status.ready ? "Active" : "Not Ready");
-      } catch (err) {
-        if (alive) setArciumStatus("Error checking status");
-      }
-    };
-    checkArcium();
-  }, [provider]);
+  const paginatedProposals = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return filteredProposals.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredProposals, currentPage]);
+  
+  const totalPages = Math.ceil(filteredProposals.length / PAGE_SIZE);
 
   return (
     <section>
@@ -105,54 +58,90 @@ export default function Voters() {
         <div>
           <h3 className="section-title">Voter Dashboard</h3>
           <p className="hero-copy" style={{ margin: 0, fontSize: "16px", maxWidth: "none" }}>
-            Participate in confidential governance. Your votes are encrypted on-chain.
+            Submit private ballots on BOT Chain without exposing live vote choices.
           </p>
         </div>
         <div className="status-badge">
-          <span className="label">Arcium Network:</span>
-          <span className={`value ${arciumStatus === "Active" ? "success" : "warning"}`}>
-            {arciumStatus}
+          <span className="label">Network:</span>
+          <span className={`value ${wallet.chainId === BOT_CHAIN.chainId ? "success" : "warning"}`}>
+            {wallet.chainId === BOT_CHAIN.chainId ? "BOT Chain" : "Switch Required"}
           </span>
         </div>
       </div>
 
-      <div style={{ marginBottom: "24px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        {["All", "Active", "Ended", "My Whitelisted"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f as any)}
-            className={`filter-chip ${filter === f ? "active" : ""}`}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "99px",
-              border: `1px solid ${filter === f ? "var(--primary)" : "var(--stroke)"}`,
-              background: filter === f ? "rgba(123, 97, 255, 0.15)" : "transparent",
-              color: filter === f ? "#fff" : "var(--text-secondary)",
-              cursor: "pointer",
-              fontSize: "13px",
-              fontWeight: 600,
-              transition: "all 0.2s"
-            }}
-          >
-            {f}
-          </button>
-        ))}
+      <div style={{ marginTop: "24px", marginBottom: "32px", display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {["All", "Active", "Reveal", "Tallying", "Finalized"].map((item) => (
+            <button
+              key={item}
+              onClick={() => setFilter(item as typeof filter)}
+              className={`filter-chip ${filter === item ? "active" : ""}`}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "99px",
+                border: `1px solid ${filter === item ? "var(--primary)" : "var(--stroke)"}`,
+                background: filter === item ? "rgba(123, 97, 255, 0.15)" : "transparent",
+                color: filter === item ? "#fff" : "var(--text-secondary)",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: 600
+              }}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <input 
+          type="text" 
+          placeholder="Search by title or ID..." 
+          className="input" 
+          style={{ maxWidth: "300px", margin: 0 }} 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       {loading ? (
-        <div className="loading-state">Loading actual proposals...</div>
+        <div className="loading-state">Loading BOT Chain proposals...</div>
       ) : (
-        <div className="proposal-grid">
-          {filteredProposals.map((p) => (
-            <ProposalCard key={p.address} proposal={p} provider={provider} />
-          ))}
-          {filteredProposals.length === 0 && (
-            <div className="empty-state">
-              <strong>No Proposals Found</strong>
-              <p>Try adjusting your filters.</p>
+        <>
+          <RevealReminderPanel proposals={allProposals} />
+          <div className="proposal-grid">
+            {paginatedProposals.map((proposal) => (
+              <ProposalCard key={proposal.id} proposal={proposal} onUpdate={() => void loadProposals(false)} />
+            ))}
+            {filteredProposals.length === 0 && (
+              <div className="empty-state">
+                <strong>No Proposals Found</strong>
+                <p>Try another status filter or create a new proposal.</p>
+                <button className="cta" style={{ marginTop: "16px" }} onClick={() => navigate("/creators")}>
+                  Create a Proposal
+                </button>
+              </div>
+            )}
+          </div>
+          {totalPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "32px" }}>
+              <button 
+                className="button-ghost" 
+                disabled={currentPage === 1} 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              >
+                Previous
+              </button>
+              <span style={{ display: "flex", alignItems: "center", fontSize: "14px", color: "var(--text-secondary)" }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button 
+                className="button-ghost" 
+                disabled={currentPage === totalPages} 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </button>
             </div>
           )}
-        </div>
+        </>
       )}
     </section>
   );

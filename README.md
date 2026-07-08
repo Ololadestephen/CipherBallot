@@ -1,134 +1,88 @@
 # CipherBallot
 
-CipherBallot is a confidential voting application built on Solana, Anchor, and Arcium. It lets communities create governance proposals where votes are cast privately, tallied in encrypted shared state, and revealed only after the voting window closes.
+CipherBallot is a private governance app migrated to BOT Chain for the BOT Chain Builder Challenge. It helps communities create proposals, collect private voting signals during the voting window, and publish a verifiable final tally only after the vote has closed.
 
-The goal is simple: voters should be able to participate without exposing live vote choices or interim results before the final tally.
+The project was originally a private voting experiment. For this challenge it has been rebuilt as a pure EVM application on BOT Chain, with a Solidity contract, React frontend, BOT Chain proof dashboard, secret-sealed threshold voting, and commit-reveal fallback.
 
 ## Live Deployment
 
 - App: https://www.cipherballot.xyz
 - GitHub: https://github.com/Ololadestephen/CipherBallot
-- Network: Solana Devnet
-- Program ID: `833fAPgL1hjhonBa349E5UyGpP7dUdmiTELuJe3pbAXW`
-- Circuit host: `https://www.cipherballot.xyz/circuits`
+- Contract: `0x1559C3a6B02E331307438D7839016EA5A827F467`
+- Deployment transaction: `0xbf980106ddc84a21f933faa954a5bc809b361b21569e6e5aca00d92a8fa90329`
+- Contract explorer: https://scan.bohr.life/address/0x1559C3a6B02E331307438D7839016EA5A827F467
+- Transaction explorer: https://scan.bohr.life/tx/0xbf980106ddc84a21f933faa954a5bc809b361b21569e6e5aca00d92a8fa90329
 
-## Why CipherBallot
+## BOT Chain
 
-Most on-chain governance systems expose votes as soon as they are submitted. That creates real problems:
+- Network: BOT Chain testnet
+- Chain ID: `968`
+- RPC: `https://rpc.bohr.life`
+- Explorer: `https://scan.bohr.life`
+- Native token: `BOT`
 
-- Early voters can influence later voters.
-- Whale voting behavior can be watched in real time.
-- Communities may coordinate around partial results instead of voting independently.
-- Sensitive internal decisions become observable before the voting window ends.
+## Why It Matters
 
-CipherBallot solves this by separating public settlement from private computation. Solana stores proposal state and final outcomes, while Arcium processes vote choices and tally updates as encrypted data.
+Most on-chain governance exposes votes as soon as they are submitted. That can influence later voters, reveal large-holder behavior in real time, and turn sensitive decisions into public coordination games before the voting window closes.
 
-## How It Works
+CipherBallot focuses on a simple product goal:
 
-1. A creator opens a proposal with a title, voting options, time window, and optional voter eligibility rules.
-2. A voter connects a wallet and selects an option in the browser.
-3. The frontend encrypts the vote for Arcium's MXE public key.
-4. The Anchor program records that the wallet voted, but it never receives a plaintext `vote_index`.
-5. Arcium runs the `apply_vote` encrypted circuit and updates encrypted tally state.
-6. Before the deadline, public results remain hidden.
-7. After the deadline, the creator finalizes the proposal.
-8. Arcium runs `reveal_tally` and the program stores only the final plaintext totals on Solana.
+> Let voters participate without exposing live option tallies before the final result.
 
-## Arcium Integration
+## Privacy Modes
 
-CipherBallot uses Arcium for the private parts of the voting lifecycle.
+### Secret-Sealed Threshold Voting
 
-### Encrypted Circuits
+This is the recommended demo path.
 
-The Arcis circuits live in `encrypted-ixs/src/lib.rs`.
+1. A creator creates a proposal with options, a voting window, committee addresses, an approval threshold, and a tally secret.
+2. The frontend hashes the tally secret locally and sends only the secret commitment to the contract.
+3. Voters submit one private ballot transaction during the active voting window.
+4. The contract records participation, but no live option tally is published.
+5. After the deadline, committee members review the tally transcript.
+6. Committee members approve the same final tally using the shared tally secret.
+7. The contract finalizes only when the approval threshold is reached.
+8. Mismatched tally approvals are rejected.
 
-- `init_tally` initializes encrypted tally state.
-- `apply_vote` applies one encrypted vote to the encrypted tally.
-- `reveal_tally` reveals final option counts after the proposal ends.
+Important: V1 uses a shared tally secret for practical challenge delivery. The secret is committed at proposal creation and revealed only during post-deadline tally approval. V2 upgrades this layer to full threshold encryption, distributed key generation, and proof-backed tally verification.
 
-### Anchor Program Flow
+### Commit-Reveal Fallback
 
-The Anchor program lives in `programs/confidential_vote/src/lib.rs`.
-
-- `create_proposal` creates public proposal metadata.
-- `init_tally` queues Arcium tally initialization.
-- `cast_vote` accepts encrypted vote material only.
-- `apply_vote_callback` accepts verified Arcium output and stores updated encrypted tally state.
-- `finalize_tally` queues final tally reveal after the deadline.
-- `reveal_tally_callback` stores final results returned by Arcium.
-
-### Privacy Benefits
-
-- The program does not accept plaintext vote choices.
-- Per-option vote counts are not stored publicly during voting.
-- Double voting is prevented with a voter PDA.
-- Results remain empty until the Arcium reveal callback completes.
-- Final tally publication is driven by Arcium's callback flow and verified computation output.
-
-## Off-Chain Circuit Storage
-
-CipherBallot uses Arcium off-chain circuit sources instead of storing large circuit binaries directly on-chain. This avoids devnet callback failures caused by large on-chain circuit storage.
-
-The compiled `.arcis` files are served publicly from the frontend deployment:
-
-- `https://www.cipherballot.xyz/circuits/init_tally.arcis`
-- `https://www.cipherballot.xyz/circuits/apply_vote.arcis`
-- `https://www.cipherballot.xyz/circuits/reveal_tally.arcis`
-
-The files are committed under:
+CipherBallot also supports classic EVM commit-reveal voting:
 
 ```text
-app/public/circuits/
+keccak256(abi.encode(proposalId, voter, optionIndex, secret))
 ```
 
-To use another public host, rebuild the program with:
+Voters commit during the voting window, then reveal `optionIndex` and `secret` after the deadline. The contract verifies the reveal before updating the tally.
 
-```bash
-CIPHERBALLOT_CIRCUIT_BASE_URL=https://your-public-host/circuits anchor build
-```
+## Features
 
-Existing Arcium computation definitions are immutable. If the circuit source URL changes, deploy a fresh program ID or fresh computation-definition namespace, then rerun the Arcium initialization script.
+- EVM-only BOT Chain deployment.
+- Wallet connect with automatic BOT Chain add/switch support.
+- Secret-sealed threshold proposal creation.
+- One-action private ballot submission for threshold proposals.
+- Committee tally approval workbench.
+- Optional allowlist-only proposals.
+- Commit-reveal fallback mode.
+- BOT Chain proof dashboard showing live contract/proposal data.
+- Result verification page with contract links, tally status, deadlines, and accounting.
+- Technical write-up inside the app.
 
 ## Project Structure
 
 ```text
 .
 ├── app/                         # Vite + React frontend
-├── encrypted-ixs/               # Arcis encrypted circuits
-├── programs/confidential_vote/   # Anchor program
-├── tests/                       # Privacy and integration scaffolding
-├── Anchor.toml
-├── Arcium.toml
+├── src/                         # Solidity contract
+├── test/                        # Foundry tests
+├── BOTCHAIN.md                  # Deployment and demo notes
+├── SUBMISSION.md                # Challenge submission notes
+├── foundry.toml
 └── README.md
 ```
 
-## Requirements
-
-- Rust
-- Solana CLI
-- Anchor CLI `0.32.1`
-- Node.js and npm
-- Arcium tooling/client `0.9.7`
-
-## Environment Variables
-
-Frontend variables live in `app/.env`.
-
-```bash
-VITE_PROGRAM_ID=833fAPgL1hjhonBa349E5UyGpP7dUdmiTELuJe3pbAXW
-VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
-VITE_ARCIUM_CLUSTER_OFFSET=456
-```
-
-For deployment, set the same values in Vercel.
-
 ## Local Setup
-
-Install root dependencies:
-
-```bash
-npm install
-```
 
 Install frontend dependencies:
 
@@ -143,19 +97,49 @@ Run the frontend:
 npm run dev
 ```
 
-## Build
+Open:
 
-From the project root:
-
-```bash
-anchor build
+```text
+http://localhost:5173/
 ```
 
-Build encrypted circuits:
+## Environment
+
+Root `.env`:
 
 ```bash
-arcium build
+BOTCHAIN_RPC_URL=https://rpc.bohr.life
+BOTCHAIN_CHAIN_ID=968
+PRIVATE_KEY=
+CIPHERBALLOT_CONTRACT_ADDRESS=0x1559C3a6B02E331307438D7839016EA5A827F467
 ```
+
+Frontend `app/.env`:
+
+```bash
+VITE_BOTCHAIN_RPC_URL=https://rpc.bohr.life
+VITE_BOTCHAIN_EXPLORER_URL=https://scan.bohr.life
+VITE_CIPHERBALLOT_CONTRACT_ADDRESS=0x1559C3a6B02E331307438D7839016EA5A827F467
+```
+
+## Tests
+
+Run Solidity tests:
+
+```bash
+forge test --offline
+```
+
+Current test coverage checks:
+
+- proposal creation with 2-8 options;
+- duplicate vote prevention;
+- allowlist eligibility enforcement;
+- commit-reveal validation;
+- reveal/finalization timing;
+- invalid reveal rejection;
+- secret-sealed threshold finalization;
+- rejection of mismatched committee tally approvals.
 
 Build the frontend:
 
@@ -164,97 +148,65 @@ cd app
 npm run build
 ```
 
-## Tests
-
-Run the TypeScript privacy checks:
+## Deploy
 
 ```bash
-npm run test:ts
+forge create \
+  src/CipherBallotCommitReveal.sol:CipherBallotCommitReveal \
+  --rpc-url "$BOTCHAIN_RPC_URL" \
+  --private-key "$PRIVATE_KEY" \
+  --broadcast
 ```
 
-The test suite checks that:
+After deployment, set:
 
-- `cast_vote` accepts encrypted vote material only.
-- vote tallying is queued through Arcium computations.
-- callback output is verified before state changes.
-- public results stay hidden until reveal.
-- Arcis circuits mutate encrypted tally state and reveal only final counts.
-- Arcium computation-definition initialization hooks are present.
-
-## Devnet Deployment
-
-Build with the public circuit host:
-
-```bash
-CIPHERBALLOT_CIRCUIT_BASE_URL=https://www.cipherballot.xyz/circuits anchor build
-```
-
-Deploy:
-
-```bash
-anchor deploy
-```
-
-Initialize Arcium MXE and computation definitions:
-
-```bash
-node tests/init_arcium.mjs
-```
-
-The init script creates the MXE account if needed and initializes computation definitions for:
-
-- `init_tally`
-- `apply_vote`
-- `reveal_tally`
+- `CIPHERBALLOT_CONTRACT_ADDRESS`
+- `VITE_CIPHERBALLOT_CONTRACT_ADDRESS`
 
 ## Demo Flow
 
-Creator flow:
+Creator:
 
 1. Connect wallet.
-2. Create a proposal.
-3. Set voting options and deadline.
-4. Initialize encrypted tally state.
-5. Wait for voters to cast encrypted votes.
-6. Finalize after the deadline.
-7. Reveal final results.
+2. Add or switch to BOT Chain.
+3. Create a secret-sealed threshold proposal.
+4. Add committee addresses and threshold.
+5. Set a short voting duration for demo.
+6. Share the proposal.
 
-Voter flow:
+Voter:
 
 1. Connect wallet.
 2. Open an active proposal.
 3. Select an option.
-4. Submit encrypted vote.
-5. Wait for Arcium to apply the encrypted vote.
-6. Return after deadline to view final results.
+4. Submit one private ballot.
+5. Confirm that no option tally is visible during voting.
 
-Privacy check:
+Committee:
 
-- During voting, the app can show total encrypted votes, but not per-option results.
-- Final option totals appear only after the Arcium reveal computation completes.
+1. Wait until the voting deadline passes.
+2. Open the proposal result page.
+3. Enter the agreed tally values, transcript URI, tally proof hash, and tally secret.
+4. Approve with committee wallets until the threshold is reached.
+5. View the finalized result and BOT Chain proof links.
 
 ## Security Notes
 
-CipherBallot is a devnet prototype built for the Arcium confidential governance track. It demonstrates the core privacy model, but should receive additional review before production use.
+CipherBallot is a testnet prototype for BOT Chain Builder Challenge #1. It is designed to demonstrate a credible privacy-preserving governance flow, not to replace a production-audited voting system yet.
 
 Current safeguards:
 
-- No plaintext vote index in `cast_vote`.
-- One vote per wallet per proposal.
-- Final results blocked until the proposal deadline.
-- Encrypted tally state used before reveal.
-- Arcium callback path used for tally mutation and final reveal.
+- The plain tally secret is not sent during proposal creation; the frontend sends `keccak256(secret)`.
+- One wallet can submit only one ballot per proposal.
+- Threshold proposals require at least two committee members and threshold of at least two.
+- Finalization requires enough committee approvals.
+- Tally approvals must match the same tally hash.
+- Commit-reveal votes cannot be revealed before the voting deadline.
+- Finalization is blocked while voting is active.
 
-Recommended production hardening:
+## Challenge Summary
 
-- Independent audit of Anchor account constraints.
-- Stronger eligibility modules for token/NFT/community membership voting.
-- More complete end-to-end tests against live Arcium callback delivery.
-- Clear governance rules for proposal creation and upgrade authority.
-
-## Submission Summary
-
-CipherBallot demonstrates confidential governance on Solana using Arcium. Votes are encrypted before submission, tallied through encrypted computation, and revealed only after the voting window closes. This reduces early-vote influence while preserving the transparency of final on-chain results.
+CipherBallot demonstrates a BOT Chain-native private governance workflow: private ballot submission, no live option tally, threshold committee finalization, and verifiable on-chain results. It is an existing project migrated and upgraded into a pure EVM BOT Chain application for the Builder Challenge.
 
 ## License
 

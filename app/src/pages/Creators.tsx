@@ -1,413 +1,410 @@
-import { useMemo, useState, useEffect } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import * as anchor from "@coral-xyz/anchor";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AdminProposalCard } from "../components/AdminProposalCard";
-import { fetchProposals, type ProposalView } from "../lib/proposals";
-
-type View = "dashboard" | "wizard";
-type Step = 1 | 2 | 3;
-type CreatorStatus = "idle" | "sending" | "success" | "error";
-
-const DEFAULT_OPTIONS = ["Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"];
+import { useForm, useFieldArray } from "react-hook-form";
+import { getAddress } from "ethers";
+import { createProposal, createThresholdProposal, explorerTx, normalizeAddressList, useEvmWallet } from "../lib/evm";
 
 function toLocalDatetimeInputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours()
-  )}:${pad(date.getMinutes())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+type FormValues = {
+  title: string;
+  options: { value: string }[];
+  startsImmediately: boolean;
+  scheduledStart: string;
+  durationDays: number;
+  privacyMode: "threshold" | "commitReveal";
+  eligibility: "public" | "allowlist";
+  allowlistRaw: string;
+  committeeRaw: string;
+  threshold: number;
+  tallySecret: string;
+};
+
 export default function Creators() {
-  const { connection } = useConnection();
-  const wallet = useWallet();
+  const wallet = useEvmWallet();
   const navigate = useNavigate();
-
-  // View State
-  const [view, setView] = useState<View>("dashboard");
-  const [myProposals, setMyProposals] = useState<ProposalView[]>([]);
-  const [loadingProposals, setLoadingProposals] = useState(false);
-
-  // Wizard State
-  const [step, setStep] = useState<Step>(1);
-  const [status, setStatus] = useState<CreatorStatus>("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [txHash, setTxHash] = useState("");
 
-  // Form Data
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [options, setOptions] = useState<string[]>(DEFAULT_OPTIONS);
-  const [proposalId, setProposalId] = useState(() => Math.floor(Date.now() / 1000));
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    getValues,
+    formState: { errors }
+  } = useForm<FormValues>({
+    mode: "onBlur",
+    defaultValues: {
+      title: "",
+      options: [{ value: "Yes" }, { value: "No" }, { value: "Abstain" }],
+      startsImmediately: true,
+      scheduledStart: toLocalDatetimeInputValue(new Date()),
+      durationDays: 3,
+      privacyMode: "threshold",
+      eligibility: "public",
+      allowlistRaw: "",
+      committeeRaw: "",
+      threshold: 2,
+      tallySecret: ""
+    }
+  });
 
-  const [startsImmediately, setStartsImmediately] = useState(true);
-  const [scheduledStart, setScheduledStart] = useState(toLocalDatetimeInputValue(new Date()));
-  const [durationPreset, setDurationPreset] = useState<"1" | "3" | "7" | "custom">("7");
-  const [customDays, setCustomDays] = useState("7");
-  const [eligibility, setEligibility] = useState<"anyone" | "token" | "whitelist">("anyone");
-  const [requiredMint, setRequiredMint] = useState("");
-  const [whitelistRaw, setWhitelistRaw] = useState("");
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "options"
+  });
 
-  const [createdAddress, setCreatedAddress] = useState("");
+  const watchStartsImmediately = watch("startsImmediately");
+  const isStartsImmediately = watchStartsImmediately === true || String(watchStartsImmediately) === "true";
+  const watchPrivacyMode = watch("privacyMode");
+  const watchEligibility = watch("eligibility");
+  const watchCommitteeRaw = watch("committeeRaw");
 
-  const provider = useMemo(() => {
-    if (!wallet.publicKey || !wallet.signTransaction || !wallet.signAllTransactions) return null;
-    return new anchor.AnchorProvider(connection, wallet as anchor.Wallet, { commitment: "confirmed" });
-  }, [connection, wallet]);
+  const onSubmit = async (data: FormValues) => {
+    if (!wallet.connected) return setMessage("Connect wallet first");
 
-  // Fetch My Proposals
-  const loadProposals = async () => {
-    if (!wallet.connected || !wallet.publicKey) return;
-    setLoadingProposals(true);
+    const activeOptions = data.options.map((opt) => opt.value.trim()).filter(Boolean);
+    if (activeOptions.length < 2 || activeOptions.length > 8) return setMessage("Use 2 to 8 voting options.");
+
+    const formStartsImmediately = data.startsImmediately === true || String(data.startsImmediately) === "true";
+    const startDate = formStartsImmediately ? new Date() : new Date(data.scheduledStart);
+    const durationDays = Math.max(1, Number(data.durationDays));
+    const startTs = Math.floor(startDate.getTime() / 1000);
+    const endTs = startTs + durationDays * 24 * 60 * 60;
+    
+    let allowlist: string[] = [];
+    let committee: string[] = [];
+
     try {
-      const all = await fetchProposals(connection);
-      const mine = all.filter(p => p.creator === wallet.publicKey?.toBase58());
-      setMyProposals(mine);
-    } catch (err) {
-      console.error("Failed to fetch proposals", err);
-    } finally {
-      setLoadingProposals(false);
+      allowlist = data.eligibility === "allowlist" ? normalizeAddressList(data.allowlistRaw) : [];
+      committee = data.privacyMode === "threshold" ? normalizeAddressList(data.committeeRaw) : [];
+    } catch {
+      return setMessage("One of the address lists contains an invalid EVM address.");
     }
-  };
 
-  useEffect(() => {
-    if (view === "dashboard" && wallet.connected) {
-      loadProposals();
-    }
-  }, [view, wallet.connected, wallet.publicKey, connection]);
-
-  // Derived Values
-  const activeOptions = options.map((opt) => opt.trim()).filter(Boolean);
-  const durationDays = durationPreset === "custom" ? Number(customDays) : Number(durationPreset);
-  const startDate = startsImmediately ? new Date() : new Date(scheduledStart);
-  const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
-
-  // Validation
-  const validateStep1 = () => {
-    if (!title.trim()) {
-      setMessage("Title is required");
-      return false;
-    }
-    setMessage("");
-    return true;
-  };
-
-  const validateStep2 = () => {
-    if (activeOptions.length < 2) {
-      setMessage("At least 2 options required");
-      return false;
-    }
-    if (activeOptions.length > 8) {
-      setMessage("Max 8 options allowed");
-      return false;
-    }
-    setMessage("");
-    return true;
-  };
-
-  const handleSubmit = async () => {
-    if (!provider) return setMessage("Connect wallet first");
+    const thresholdCount = Math.max(0, Number(data.threshold));
 
     try {
       setStatus("sending");
-      setMessage("Creating proposal & initializing tally...");
-
-      const startTs = Math.floor(startDate.getTime() / 1000);
-      const endTs = Math.floor(endDate.getTime() / 1000);
-      const whitelistEntries = whitelistRaw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-      const eligibilityMode = eligibility === "anyone" ? 0 : eligibility === "whitelist" ? 1 : 2;
-
-      const { createProposal, initEncryptedTally } = await import("../lib/arcium");
-
-      // 1. Create Proposal
-      const salt = new anchor.BN(proposalId).toArrayLike(Buffer, "le", 8);
-      const { proposal } = await createProposal({
-        provider,
-        proposalSalt: Array.from(salt),
-        title: title.trim(),
-        options: activeOptions,
-        startTs,
-        endTs,
-        eligibilityMode,
-        whitelist: whitelistEntries
-      });
-
-      setCreatedAddress(proposal.toBase58());
-      setMessage("Proposal created! Initializing tally...");
-
-      // 2. Init Tally
-      await initEncryptedTally({
-        provider,
-        proposalPubkey: proposal,
-        optionsCount: activeOptions.length
-      });
-
+      setMessage("Creating BOT Chain proposal...");
+      const contract = await wallet.getSignerContract();
+      const hash = data.privacyMode === "threshold"
+        ? await createThresholdProposal(
+          contract,
+          data.title.trim(),
+          activeOptions,
+          startTs,
+          endTs,
+          allowlist,
+          committee,
+          thresholdCount,
+          data.tallySecret.trim()
+        )
+        : await createProposal(contract, data.title.trim(), activeOptions, startTs, endTs, allowlist);
+      setTxHash(hash);
       setStatus("success");
-      setMessage("Success! Proposal is live.");
-      loadProposals(); // Refresh list on creation
-    } catch (err: any) {
-      console.error(err);
+      setMessage("Proposal created on BOT Chain. Redirecting to Voters dashboard...");
+      setTimeout(() => {
+        navigate("/voters");
+      }, 1500);
+    } catch (err) {
       setStatus("error");
-
-      const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes("0x1") || errMsg.includes("insufficient lamports") || errMsg.includes("insufficient funds")) {
-        setMessage("Insufficient balance to create proposal");
-      } else {
-        setMessage(errMsg || "Creation failed");
-      }
+      setMessage(err instanceof Error ? err.message : "Proposal creation failed");
     }
   };
 
-  const resetForm = () => {
-    setStep(1);
-    setStatus("idle");
-    setTitle("");
-    setDescription("");
-    setOptions(DEFAULT_OPTIONS);
-    setProposalId(Math.floor(Date.now() / 1000));
-    setCreatedAddress("");
-    setView("dashboard");
+  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>, fieldName: "allowlistRaw" | "committeeRaw") => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const items = text.split(/[\s,]+/).map((i) => i.trim()).filter(Boolean);
+      const valids: string[] = [];
+      
+      for (const item of items) {
+        try {
+          valids.push(getAddress(item));
+        } catch {
+          // Skip invalid ones silently for the CSV import
+        }
+      }
+
+      if (valids.length > 0) {
+        const currentVal = getValues(fieldName);
+        const prefix = currentVal && currentVal.trim() !== "" ? currentVal.trim() + "\n" : "";
+        setValue(fieldName, prefix + valids.join("\n"), { shouldValidate: true, shouldDirty: true });
+      }
+      
+      // Reset input value to allow uploading the same file again if needed
+      event.target.value = "";
+    };
+    reader.readAsText(file);
   };
 
-  // --- RENDER ---
+  // Helper component for error messages
+  const ErrorMsg = ({ msg }: { msg?: string }) => msg ? <p style={{ color: "#e74c3c", fontSize: "13px", marginTop: "4px" }}>{msg}</p> : null;
 
-  const renderDashboard = () => (
-    <div className="dashboard-view">
+  return (
+    <section className="wizard-view">
       <div className="voters-header">
         <div>
           <h3 className="section-title">Creator Studio</h3>
-          <p className="hero-copy" style={{ fontSize: '16px', margin: 0, opacity: 0.7 }}>Manage your confidential proposals</p>
+          <p className="hero-copy" style={{ fontSize: "16px", margin: 0, opacity: 0.7 }}>
+            Create a private voting proposal on BOT Chain.
+          </p>
         </div>
-        <button className="cta" onClick={() => setView("wizard")}>
-          + Create New Proposal
-        </button>
       </div>
 
-      {!wallet.connected ? (
-        <div className="empty-state">
-          <p>Connect your wallet to view your proposals.</p>
-        </div>
-      ) : loadingProposals ? (
-        <div className="loading-state">Loading your proposals...</div>
-      ) : myProposals.length === 0 ? (
-        <div className="empty-state">
-          <strong>No Proposals Yet</strong>
-          <p>Create your first confidential proposal to get started.</p>
-          <button className="cta secondary" onClick={() => setView("wizard")} style={{ marginTop: '16px' }}>
-            Create Proposal
-          </button>
-        </div>
-      ) : (
-        <div className="proposal-grid">
-          {myProposals.map(p => (
-            <AdminProposalCard
-              key={p.address}
-              proposal={p}
-              provider={provider}
-              onUpdate={loadProposals}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+      <div className="proposal-card wizard-card">
+        <div className="wizard-step-content">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <h4>Proposal Basics</h4>
+            <label className="input-label">
+              Title
+              <input
+                className={`input ${errors.title ? "input-error" : ""}`}
+                style={errors.title ? { borderColor: "#e74c3c" } : {}}
+                placeholder="e.g. Should the DAO fund the Q3 grant pool?"
+                {...register("title", { required: "Title is required" })}
+              />
+              <ErrorMsg msg={errors.title?.message} />
+            </label>
 
-  const renderWizard = () => (
-    <div className="wizard-view">
-      <div className="voters-header">
-        <h3 className="section-title">New Proposal</h3>
-        <button className="button-ghost small" onClick={resetForm}>Cancel</button>
-      </div>
-
-      {status === "success" ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-          <div className="status-badge success" style={{ marginBottom: '20px' }}>
-            <span className="value" style={{ fontSize: '40px' }}>✓</span>
-          </div>
-          <h3>Proposal Created Successfully!</h3>
-          <p className="kpi" style={{ marginBottom: '24px' }}>Address: {createdAddress}</p>
-          <div className="actions" style={{ justifyContent: 'center' }}>
-            <button className="cta" onClick={() => navigate(`/results?proposal=${createdAddress}`)}>View Results Page</button>
-            <button className="button-ghost" onClick={resetForm}>Back to Dashboard</button>
-          </div>
-        </div>
-      ) : (
-        <div className="proposal-card wizard-card">
-          <div className="wizard-progress">
-            <div className={`step-dot ${step >= 1 ? 'active' : ''}`}>1</div>
-            <div className="step-line"></div>
-            <div className={`step-dot ${step >= 2 ? 'active' : ''}`}>2</div>
-            <div className="step-line"></div>
-            <div className={`step-dot ${step >= 3 ? 'active' : ''}`}>3</div>
-          </div>
-
-          {step === 1 && (
-            <div className="wizard-step-content">
-              <h4>Step 1: Basics</h4>
-              <label className="input-label">
-                Title
-                <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Q2 Roadmap Vote" />
-              </label>
-              <label className="input-label">
-                Description (Optional)
-                <textarea className="input textarea" value={description} onChange={e => setDescription(e.target.value)} placeholder="Add context..." rows={4} />
-              </label>
-
-              <div className="actions wizard-actions">
-                <button className="cta full-width" onClick={() => { if (validateStep1()) setStep(2); }}>Next: Options</button>
-              </div>
+            <h4>Voting Options</h4>
+            <div className="option-list">
+              {fields.map((field, index) => (
+                <div key={field.id} className="option-row" style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                  <span className="option-label" style={{ alignSelf: "center", width: "24px", opacity: 0.5 }}>#{index + 1}</span>
+                  <input
+                    className={`input option-input ${errors.options?.[index]?.value ? "input-error" : ""}`}
+                    style={{ flex: 1, ...(errors.options?.[index]?.value ? { borderColor: "#e74c3c" } : {}) }}
+                    placeholder={`Option ${index + 1}`}
+                    {...register(`options.${index}.value`, { required: "Option cannot be empty" })}
+                  />
+                  {fields.length > 2 && (
+                    <button type="button" className="button-ghost icon-only" onClick={() => remove(index)}>
+                      x
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
+            {errors.options?.root?.message && <ErrorMsg msg={errors.options.root.message} />}
+            <button
+              type="button"
+              className="button-ghost full-width"
+              onClick={() => append({ value: "" })}
+              disabled={fields.length >= 8}
+            >
+              + Add Option
+            </button>
 
-          {step === 2 && (
-            <div className="wizard-step-content">
-              <h4>Step 2: Voting Options</h4>
-              <p className="description-text">Define the choices voters can select from.</p>
-              <div className="option-list">
-                {options.map((opt, i) => (
-                  <div key={i} className="option-row" style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <span className="option-label" style={{ alignSelf: 'center', width: '24px', opacity: 0.5 }}>#{i + 1}</span>
-                    <input className="input option-input" value={opt} onChange={e => {
-                      const newOpts = [...options];
-                      newOpts[i] = e.target.value;
-                      setOptions(newOpts);
-                    }} placeholder={`Option ${i + 1}`} style={{ flex: 1 }} />
-                    {options.length > 2 && (
-                      <button className="button-ghost icon-only" onClick={() => setOptions(options.filter((_, idx) => idx !== i))} style={{ color: 'var(--error)' }}>
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
+            <h4>Voting Window</h4>
+            <div className="form-group">
+              <div className="inline-options">
+                <label className="radio-row">
+                  <input type="radio" value="true" {...register("startsImmediately")} />
+                  Start Immediately
+                </label>
+                <label className="radio-row">
+                  <input type="radio" value="false" {...register("startsImmediately")} />
+                  Schedule
+                </label>
               </div>
-              <button className="button-ghost full-width" onClick={() => setOptions([...options, ""])} disabled={options.length >= 8} style={{ marginTop: '12px' }}>
-                + Add Option
-              </button>
-
-              <div className="actions wizard-actions" style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-                <button className="button-ghost" onClick={() => setStep(1)}>Back</button>
-                <button className="cta" style={{ flex: 1 }} onClick={() => { if (validateStep2()) setStep(3); }}>Next: Configuration</button>
-              </div>
+              {!isStartsImmediately && (
+                <input
+                  type="datetime-local"
+                  className="input"
+                  style={{ marginTop: "8px" }}
+                  {...register("scheduledStart", {
+                    validate: (val) => isStartsImmediately || !!val || "Scheduled start is required"
+                  })}
+                />
+              )}
+              {!isStartsImmediately && <ErrorMsg msg={errors.scheduledStart?.message} />}
             </div>
-          )}
 
-          {step === 3 && (
-            <div className="wizard-step-content">
-              <h4>Step 3: Configuration</h4>
+            <label className="input-label" style={{ marginTop: "24px" }}>
+              Duration (Days)
+              <input
+                className={`input ${errors.durationDays ? "input-error" : ""}`}
+                type="number"
+                min="1"
+                step="1"
+                style={errors.durationDays ? { borderColor: "#e74c3c" } : {}}
+                {...register("durationDays", {
+                  required: "Duration is required",
+                  min: { value: 1, message: "Duration must be at least 1 day" }
+                })}
+              />
+              <ErrorMsg msg={errors.durationDays?.message} />
+            </label>
 
-              <div className="form-group">
-                <label className="input-label">Start Time</label>
-                <div className="inline-options">
-                  <label className="radio-row">
-                    <input type="radio" checked={startsImmediately} onChange={() => setStartsImmediately(true)} />
-                    Start Immediately
-                  </label>
-                  <label className="radio-row">
-                    <input type="radio" checked={!startsImmediately} onChange={() => setStartsImmediately(false)} />
-                    Schedule
-                  </label>
-                </div>
-                {!startsImmediately && (
-                  <input type="datetime-local" className="input" value={scheduledStart} onChange={e => setScheduledStart(e.target.value)} style={{ marginTop: '8px' }} />
-                )}
+            <h4>Privacy Mode</h4>
+            <div className="form-group">
+              <div className="inline-options">
+                <label className="radio-row">
+                  <input type="radio" value="threshold" {...register("privacyMode")} />
+                  Secret-sealed threshold
+                </label>
+                <label className="radio-row">
+                  <input type="radio" value="commitReveal" {...register("privacyMode")} />
+                  Commit-reveal fallback
+                </label>
               </div>
-
-              <div className="form-group">
-                <label className="input-label">Duration</label>
-                <div className="inline-options">
-                  {["1", "3", "7"].map(d => (
-                    <label key={d} className="radio-row">
-                      <input type="radio" checked={durationPreset === d} onChange={() => setDurationPreset(d as any)} /> {d} Days
-                    </label>
-                  ))}
-                  <label className="radio-row">
-                    <input type="radio" checked={durationPreset === "custom"} onChange={() => setDurationPreset("custom")} /> Custom
-                  </label>
-                </div>
-                {durationPreset === "custom" && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                    <input type="number" className="input" value={customDays} onChange={e => setCustomDays(e.target.value)} style={{ width: '80px' }} />
-                    <span>Days</span>
-                  </div>
-                )}
-              </div>
-
-              <hr className="divider" />
-
-              <div className="form-group">
-                <label className="input-label">Voter Eligibility</label>
-                <div className="inline-options">
-                  <label className="radio-row"><input type="radio" checked={eligibility === "anyone"} onChange={() => setEligibility("anyone")} /> Public</label>
-                  <label className="radio-row"><input type="radio" checked={eligibility === "token"} onChange={() => setEligibility("token")} /> Token Gated</label>
-                  <label className="radio-row"><input type="radio" checked={eligibility === "whitelist"} onChange={() => setEligibility("whitelist")} /> Whitelist</label>
-                </div>
-
-                {eligibility === "token" && (
-                  <input className="input" value={requiredMint} onChange={e => setRequiredMint(e.target.value)} placeholder="Token Mint Address" style={{ marginTop: '8px' }} />
-                )}
-                {eligibility === "whitelist" && (
-                  <div style={{ marginTop: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <span className="input-label" style={{ marginBottom: 0 }}>Addresses (One per line)</span>
-                      <label className="link" style={{ fontSize: '12px', cursor: 'pointer' }}>
-                        Import CSV
+              {watchPrivacyMode === "threshold" && (
+                <div style={{ marginTop: "12px" }}>
+                  <label className="input-label">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                      <span>Committee addresses</span>
+                      <label style={{ cursor: "pointer", color: "#3498db", fontSize: "13px" }}>
+                        + Import CSV
                         <input
                           type="file"
                           accept=".csv,.txt"
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = (evt) => {
-                              const text = evt.target?.result as string;
-                              // Extract potential base58 addresses (32-44 chars)
-                              const addresses = text.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/g);
-                              if (addresses) {
-                                const unique = Array.from(new Set(addresses));
-                                setWhitelistRaw(prev => (prev ? prev + '\n' : '') + unique.join('\n'));
-                                setMessage(`Imported ${unique.length} addresses.`);
-                              } else {
-                                setMessage("No valid addresses found in file.");
-                              }
-                            };
-                            reader.readAsText(file);
-                            e.target.value = ''; // Reset
-                          }}
+                          style={{ display: "none" }}
+                          onChange={(e) => handleCsvUpload(e, "committeeRaw")}
                         />
                       </label>
                     </div>
-                    <textarea className="input textarea" value={whitelistRaw} onChange={e => setWhitelistRaw(e.target.value)} placeholder="Address 1&#10;Address 2&#10;..." rows={5} />
+                    <textarea
+                      className={`input textarea ${errors.committeeRaw ? "input-error" : ""}`}
+                      style={errors.committeeRaw ? { borderColor: "#e74c3c" } : {}}
+                      placeholder="0x123...&#10;0xabc...&#10;0xdef..."
+                      rows={4}
+                      {...register("committeeRaw", {
+                        validate: (value) => {
+                          try {
+                            const list = normalizeAddressList(value);
+                            if (list.length < 2) return "At least 2 committee addresses required";
+                            return true;
+                          } catch {
+                            return "Contains invalid EVM address(es)";
+                          }
+                        }
+                      })}
+                    />
+                    <ErrorMsg msg={errors.committeeRaw?.message} />
+                  </label>
+                  
+                  <label className="input-label">
+                    Threshold approvals required
+                    <input
+                      className={`input ${errors.threshold ? "input-error" : ""}`}
+                      type="number"
+                      min="2"
+                      style={errors.threshold ? { borderColor: "#e74c3c" } : {}}
+                      {...register("threshold", {
+                        validate: (val) => {
+                          const count = parseInt(String(val), 10);
+                          if (isNaN(count) || count < 2) return "Threshold must be at least 2";
+                          try {
+                            const list = normalizeAddressList(watchCommitteeRaw);
+                            if (count > list.length) return "Threshold cannot exceed committee size";
+                          } catch {
+                            return "Fix committee addresses first";
+                          }
+                          return true;
+                        }
+                      })}
+                    />
+                    <ErrorMsg msg={errors.threshold?.message} />
+                  </label>
+
+                  <label className="input-label">
+                    Committee tally secret
+                    <input
+                      className={`input ${errors.tallySecret ? "input-error" : ""}`}
+                      type="password"
+                      style={errors.tallySecret ? { borderColor: "#e74c3c" } : {}}
+                      placeholder="Shared by the committee after voting closes"
+                      {...register("tallySecret", {
+                        validate: (val) => !!val.trim() || "Tally secret is required"
+                      })}
+                    />
+                    <ErrorMsg msg={errors.tallySecret?.message} />
+                  </label>
+                </div>
+              )}
+            </div>
+
+            <h4>Eligibility</h4>
+            <div className="form-group">
+              <div className="inline-options">
+                <label className="radio-row">
+                  <input type="radio" value="public" {...register("eligibility")} />
+                  Public
+                </label>
+                <label className="radio-row">
+                  <input type="radio" value="allowlist" {...register("eligibility")} />
+                  Allowlist
+                </label>
+              </div>
+              {watchEligibility === "allowlist" && (
+                <label className="input-label" style={{ marginTop: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <span>Allowed voter addresses</span>
+                    <label style={{ cursor: "pointer", color: "#3498db", fontSize: "13px" }}>
+                      + Import CSV
+                      <input
+                        type="file"
+                        accept=".csv,.txt"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleCsvUpload(e, "allowlistRaw")}
+                      />
+                    </label>
                   </div>
+                  <textarea
+                    className={`input textarea ${errors.allowlistRaw ? "input-error" : ""}`}
+                    style={errors.allowlistRaw ? { borderColor: "#e74c3c" } : {}}
+                    placeholder="0x123...&#10;0xabc..."
+                    rows={5}
+                    {...register("allowlistRaw", {
+                      validate: (value) => {
+                        try {
+                          const list = normalizeAddressList(value);
+                          if (list.length === 0) return "Add at least one valid voter address";
+                          return true;
+                        } catch {
+                          return "Contains invalid EVM address(es)";
+                        }
+                      }
+                    })}
+                  />
+                  <ErrorMsg msg={errors.allowlistRaw?.message} />
+                </label>
+              )}
+            </div>
+
+            <div className="actions wizard-actions">
+              <button type="submit" className="cta full-width" disabled={status === "sending"}>
+                {status === "sending" ? "Creating..." : "Create Proposal"}
+              </button>
+            </div>
+
+            {message && (
+              <div className={`feedback-msg ${status === "success" ? "done" : status === "error" ? "error" : ""}`}>
+                {message}
+                {txHash && (
+                  <>
+                    {" "}
+                    <a href={explorerTx(txHash)} target="_blank" rel="noreferrer">View transaction</a>
+                  </>
                 )}
               </div>
-
-              <div className="notice-box">
-                <strong>Summary</strong>
-                <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
-                  <li>{title}</li>
-                  <li>{activeOptions.length} Options</li>
-                  <li>Duration: {durationDays} Days</li>
-                </ul>
-              </div>
-
-              {message && <div className={`feedback-msg ${status === 'error' ? 'error' : ''}`}>{message}</div>}
-
-              <div className="actions wizard-actions" style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-                <button className="button-ghost" onClick={() => setStep(2)}>Back</button>
-                <button className="cta" style={{ flex: 1 }} onClick={handleSubmit} disabled={status === "sending"}>
-                  {status === "sending" ? "Creating..." : "Confirm & Create"}
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </form>
         </div>
-      )}
-    </div>
-  );
-
-  return (
-    <section className="page-section">
-      {view === "dashboard" ? renderDashboard() : renderWizard()}
+      </div>
     </section>
   );
 }
+

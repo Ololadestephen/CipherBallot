@@ -1,10 +1,12 @@
 import { Link, NavLink } from "react-router-dom";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useState, useEffect } from "react";
+import { BOT_CHAIN, shortAddress, useEvmWallet } from "../lib/evm";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [showDisconnect, setShowDisconnect] = useState(false);
+  const wallet = useEvmWallet();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,10 +42,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <NavLink to="/voters">Voters</NavLink>
           <NavLink to="/creators">Creators</NavLink>
           <NavLink to="/results">Results</NavLink>
+          <NavLink to="/proof">Proof</NavLink>
           <NavLink to="/docs">Docs</NavLink>
         </div>
         <div className="nav-actions">
-          <WalletMultiButton className="cta" />
+          {wallet.connected && wallet.chainId !== BOT_CHAIN.chainId ? (
+            <button className="cta" onClick={() => wallet.switchToBotChain()}>
+              Add / Switch BOT Chain
+            </button>
+          ) : wallet.connected ? (
+            <div style={{ position: "relative" }}>
+               <button className="cta" onClick={() => setShowDisconnect(!showDisconnect)}>
+                 {shortAddress(wallet.account)}
+               </button>
+               {showDisconnect && (
+                 <div style={{ 
+                   position: "absolute", top: "100%", right: 0, marginTop: "8px", 
+                   background: "var(--bg-card)", border: "1px solid var(--stroke)", 
+                   borderRadius: "var(--radius)", padding: "4px", zIndex: 100,
+                   boxShadow: "0 10px 30px rgba(0,0,0,0.5)"
+                 }}>
+                   <button 
+                     className="button-ghost" 
+                     style={{ color: "var(--danger)", width: "100%", whiteSpace: "nowrap", padding: "10px 20px", fontSize: "13px", fontWeight: 600, border: "none", display: "flex", justifyContent: "flex-start" }}
+                     onClick={() => { wallet.disconnect(); setShowDisconnect(false); }}
+                   >
+                     Disconnect Wallet
+                   </button>
+                 </div>
+               )}
+            </div>
+          ) : (
+            <button className="cta" onClick={() => wallet.connect()} disabled={wallet.connecting}>
+              {wallet.connecting ? "Connecting..." : "Connect Wallet"}
+            </button>
+          )}
         </div>
       </header>
       <main>{children}</main>
@@ -58,7 +91,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span>CipherBallot</span>
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
-              Privacy-preserving governance on Solana. Powered by Arcium bindings for secure, encrypted, and fair voting execution.
+              Privacy-preserving governance on BOT Chain. Submit private ballots once, reach committee threshold after the deadline, and verify final results on-chain.
             </p>
           </div>
 
@@ -69,13 +102,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link to="/creators" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Create Proposal</Link>
             <Link to="/voters" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Voter Dashboard</Link>
             <Link to="/results" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Results History</Link>
+            <Link to="/proof" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">BOT Chain Proof</Link>
           </div>
 
           {/* Resources */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Resources</h4>
             <Link to="/docs" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Documentation</Link>
-            <a href="https://docs.arcium.com/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)', fontSize: '14px' }} className="footer-link">Arcium Docs</a>
+            <a href="https://dev-docs.botchain.ai/docs/Developers/quick-guide/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)', fontSize: '14px' }} className="footer-link">BOT Chain Docs</a>
             <a href="https://github.com/Ololadestephen/CipherBallot" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)', fontSize: '14px' }} className="footer-link">GitHub</a>
           </div>
 
