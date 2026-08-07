@@ -1,0 +1,140 @@
+{
+  "title": "CipherBallot: Private Governance on BOT Chain",
+  "aspectRatio": "16:9",
+  "language": "en-US",
+  "targetDurationSeconds": 158,
+  "style": {
+    "tone": "clean product walkthrough",
+    "pace": "confident and calm",
+    "captions": true,
+    "music": "subtle modern electronic bed",
+    "camera": "screen capture with occasional zooms and callouts"
+  },
+  "assets": {
+    "appUrl": "https://www.cipherballot.xyz",
+    "repoUrl": "https://github.com/Ololadestephen/CipherBallot",
+    "explorerUrl": "https://scan.bohr.life",
+    "contractAddress": "0x72fAAA6C70FD94567c8D75cb0800033FCE10dE3a",
+    "transactionHash": "0x0223f2cb5a5816f562f0181cd682c45d199c5be0df6192ebe6f5ae18b7502bf6"
+  },
+  "scenes": [
+    {
+      "id": 1,
+      "start": 0,
+      "duration": 10,
+      "visual": "Open on the CipherBallot home page with the title centered and the active proposal cards visible below.",
+      "narration": "CipherBallot is a private governance app migrated to BOT Chain for the builder challenge.",
+      "onScreenText": "Private governance on BOT Chain"
+    },
+    {
+      "id": 2,
+      "start": 10,
+      "duration": 10,
+      "visual": "Slow zoom into the hero and proof-oriented parts of the interface. Show the app URL briefly.",
+      "narration": "It lets communities create proposals, collect private ballots, and publish verifiable results only after voting closes.",
+      "onScreenText": "Private voting. Verifiable final results."
+    },
+    {
+      "id": 3,
+      "start": 20,
+      "duration": 12,
+      "visual": "Open the Proof page. Highlight chain ID 968, the deployed contract address, and the explorer link.",
+      "narration": "This is running on BOT Chain testnet, with the deployed contract and live chain data shown on the proof page.",
+      "onScreenText": "BOT Chain testnet | Chain ID 968"
+    },
+    {
+      "id": 4,
+      "start": 32,
+      "duration": 10,
+      "visual": "Show the header button changing to Add / Switch BOT Chain after wallet connect.",
+      "narration": "The wallet flow automatically adds BOT Chain to the user’s network list if it is not already there.",
+      "onScreenText": "Add / Switch BOT Chain"
+    },
+    {
+      "id": 5,
+      "start": 42,
+      "duration": 12,
+      "visual": "Open the Creator Studio and scroll through proposal settings.",
+      "narration": "Creators can choose a short voting window, set options, and switch between secret-sealed threshold mode and commit-reveal fallback.",
+      "onScreenText": "Create a proposal"
+    },
+    {
+      "id": 6,
+      "start": 54,
+      "duration": 10,
+      "visual": "Focus on committee addresses, threshold approvals, and the tally secret field.",
+      "narration": "For the main demo path, the creator sets committee members, a threshold, and a shared tally secret that is committed before voting starts.",
+      "onScreenText": "Threshold committee + tally secret"
+    },
+    {
+      "id": 7,
+      "start": 64,
+      "duration": 10,
+      "visual": "Create the proposal and show the transaction confirmation with explorer link.",
+      "narration": "The proposal is then created on-chain, and the contract records only the secret commitment, not the plain secret.",
+      "onScreenText": "On-chain proposal created"
+    },
+    {
+      "id": 8,
+      "start": 74,
+      "duration": 10,
+      "visual": "Switch to the Voter Dashboard and highlight the active proposal card.",
+      "narration": "Voters see the active proposal, but not any live tally that could influence how they vote.",
+      "onScreenText": "Vote without live tally pressure"
+    },
+    {
+      "id": 9,
+      "start": 84,
+      "duration": 12,
+      "visual": "Select an option and submit the private ballot once.",
+      "narration": "In secret-sealed mode, the voter submits one private ballot transaction and is done. There is no mandatory reveal step for the voter.",
+      "onScreenText": "One private ballot"
+    },
+    {
+      "id": 10,
+      "start": 96,
+      "duration": 10,
+      "visual": "Show the proposal card and result page before the deadline, emphasizing that results are hidden.",
+      "narration": "During the voting window, the app keeps the option tally hidden so early results do not leak into the room.",
+      "onScreenText": "No live option tally"
+    },
+    {
+      "id": 11,
+      "start": 106,
+      "duration": 12,
+      "visual": "After the deadline, open the Results page and the committee approval panel.",
+      "narration": "Once the vote closes, committee members approve the same tally transcript on-chain using the shared tally secret.",
+      "onScreenText": "Committee approval after deadline"
+    },
+    {
+      "id": 12,
+      "start": 118,
+      "duration": 12,
+      "visual": "Show the tally proof hash, transcript URI, and approval counter increasing toward the threshold.",
+      "narration": "The contract finalizes only when enough committee approvals match the same tally hash. Mismatched approvals are rejected.",
+      "onScreenText": "Threshold approval required"
+    },
+    {
+      "id": 13,
+      "start": 130,
+      "duration": 12,
+      "visual": "Show the finalized result bars and the proof section with explorer links.",
+      "narration": "That gives us a clean audit trail on BOT Chain: the proposal, the private ballot activity, and the final verified tally.",
+      "onScreenText": "Final tally verified on BOT Chain"
+    },
+    {
+      "id": 14,
+      "start": 142,
+      "duration": 8,
+      "visual": "Return to the home page and show the repo and domain one last time.",
+      "narration": "CipherBallot is live on cipherballot dot xyz and the code is on GitHub. This is the BOT Chain migration of an existing privacy project.",
+      "onScreenText": "cipherballot.xyz | GitHub"
+    }
+  ],
+  "closing": {
+    "duration": 8,
+    "visual": "Static end card with contract address, explorer link, and challenge name.",
+    "narration": "CipherBallot brings private governance to BOT Chain with secret-sealed threshold voting and commit-reveal fallback.",
+    "onScreenText": "BOT Chain Builder Challenge #1"
+  }
+}

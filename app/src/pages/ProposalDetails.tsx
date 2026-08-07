@@ -1,5 +1,7 @@
-import { useParams, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { PageHeader } from "../components/PageHeader";
 import { ProposalCard } from "../components/ProposalCard";
 import { fetchProposal, type ProposalView } from "../lib/evm";
 
@@ -18,26 +20,30 @@ export default function ProposalDetails() {
     }
   };
 
-  useEffect(() => {
-    void loadProposal();
-  }, [id]);
+  useEffect(() => { void loadProposal(); }, [id]);
 
-  if (loading) return <div className="loading-state">Loading proposal...</div>;
+  if (loading) return <div className="loading-state app-loading-state">Loading proposal...</div>;
   if (!proposal) {
     return (
-      <div className="empty-state">
-        <h3>Proposal Not Found</h3>
-        <Link to="/voters" className="button-ghost">Back to Proposals</Link>
+      <div className="app-empty-state">
+        <strong>Proposal not found</strong>
+        <p>The requested proposal does not exist on the configured CipherBallot contract.</p>
+        <Link to="/voters" className="button-ghost icon-command"><ArrowLeft size={16} /> Back to proposals</Link>
       </div>
     );
   }
 
   return (
-    <div className="page-section" style={{ maxWidth: "680px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "24px" }}>
-        <Link to="/voters" className="link">← Back to Proposals</Link>
+    <section className="app-page proposal-detail-page">
+      <Link to="/voters" className="app-back-link"><ArrowLeft size={15} /> Proposal explorer</Link>
+      <PageHeader
+        title={proposal.title}
+        description="Review the decision policy, select an option, and submit your ballot directly to BOT Chain."
+        status={<span className={`pill status-${proposal.status.toLowerCase()}`}>{proposal.status}</span>}
+      />
+      <div className="proposal-detail-workspace">
+        <ProposalCard proposal={proposal} onUpdate={loadProposal} defaultExpanded />
       </div>
-      <ProposalCard proposal={proposal} onUpdate={loadProposal} />
-    </div>
+    </section>
   );
 }

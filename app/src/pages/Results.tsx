@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -7,18 +8,21 @@ import {
   fetchProposal,
   fetchProposals,
   finalizeProposal,
+  friendlyEvmError,
   formatDateTime,
   shortAddress,
   type ProposalView,
   useEvmWallet
 } from "../lib/evm";
 import { ResultCard } from "../components/ResultCard";
+import { PageHeader } from "../components/PageHeader";
 
 export default function Results() {
   const wallet = useEvmWallet();
   const [searchParams] = useSearchParams();
   const proposalQuery = searchParams.get("proposal");
-  const selectedId = proposalQuery ? Number(proposalQuery) : null;
+  const parsedSelectedId = proposalQuery && /^[1-9][0-9]*$/.test(proposalQuery) ? Number(proposalQuery) : null;
+  const selectedId = parsedSelectedId && Number.isSafeInteger(parsedSelectedId) ? parsedSelectedId : null;
 
   const [rows, setRows] = useState<ProposalView[]>([]);
   const [selected, setSelected] = useState<ProposalView | null>(null);
@@ -72,24 +76,29 @@ export default function Results() {
       setMessage("Proposal finalized.");
       await loadResults(false);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Finalization failed");
+      setMessage(friendlyEvmError(err, "Finalization failed."));
     }
   };
 
   const handleApproveThresholdTally = async () => {
     if (!selected) return;
-    const tally = tallyRaw
+    const tallyTokens = tallyRaw
       .split(/[,\s]+/)
       .map((item) => item.trim())
-      .filter(Boolean)
-      .map((item) => Number(item));
+      .filter(Boolean);
 
-    if (tally.length !== selected.options.length || tally.some((item) => !Number.isInteger(item) || item < 0)) {
+    if (tallyTokens.length !== selected.options.length || tallyTokens.some((item) => !/^(0|[1-9][0-9]*)$/.test(item))) {
       return setMessage(`Enter ${selected.options.length} non-negative tally numbers in option order.`);
     }
-    if (!tallyURI.trim()) return setMessage("Add a tally transcript URI.");
-    if (!/^0x[0-9a-fA-F]{64}$/.test(tallyProofHash.trim())) {
-      return setMessage("Add a 32-byte tally proof hash.");
+    const tally = tallyTokens.map((item) => BigInt(item));
+    if (tally.reduce((sum, item) => sum + item, 0n) > BigInt(selected.votesCast)) {
+      return setMessage("The tally total cannot exceed the number of submitted ballots.");
+    }
+    if (!tallyURI.trim() || new TextEncoder().encode(tallyURI.trim()).length > 512) {
+      return setMessage("Add a tally transcript URI no longer than 512 UTF-8 bytes.");
+    }
+    if (!/^0x[0-9a-fA-F]{64}$/.test(tallyProofHash.trim()) || /^0x0{64}$/i.test(tallyProofHash.trim())) {
+      return setMessage("Add a non-zero 32-byte tally proof hash.");
     }
     if (!tallySecret.trim()) return setMessage("Enter the committee tally secret.");
 
@@ -97,10 +106,11 @@ export default function Results() {
       setMessage("Approving threshold tally...");
       const contract = await wallet.getSignerContract();
       await approveThresholdTally(contract, selected.id, tally, tallyURI.trim(), tallyProofHash.trim(), tallySecret.trim());
+      setTallySecret("");
       setMessage("Threshold tally approval recorded.");
       await loadResults(false);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Tally approval failed");
+      setMessage(friendlyEvmError(err, "Tally approval failed."));
     }
   };
 
@@ -109,13 +119,17 @@ export default function Results() {
 
     return (
       <div className="results-detail-container">
-        <Link to="/results" className="back-link">← Back to All Results</Link>
+        <Link to="/results" className="app-back-link"><ArrowLeft size={15} /> All results</Link>
 
-        <div className="proposal-card detail-card" style={{ marginTop: "20px" }}>
+        <PageHeader
+          title={selected.title}
+          description="Final outcome, committee approvals, and contract evidence for this governance decision."
+          status={<span className={`pill status-${selected.status.toLowerCase()}`}>{selected.status}</span>}
+        />
+
+        <div className="result-outcome-panel">
           <div className="detail-header">
-            <h1 className="detail-title">{selected.title}</h1>
             <div className="meta-row">
-              <span className={`pill status-${selected.status.toLowerCase()}`}>{selected.status}</span>
               <span className="metadata-item">
                 {selected.privacyMode === "SecretSealed" ? `${selected.votesCast} private ballots` : `${selected.votesCast} commitments`}
               </span>
@@ -163,7 +177,7 @@ export default function Results() {
         </div>
 
         {selected.privacyMode === "SecretSealed" && selected.status === "Tallying" && (
-          <div className="proposal-card detail-card" style={{ marginTop: "20px" }}>
+          <div className="committee-operator-panel">
             <strong>Committee Tally Approval</strong>
             {committeeStatus.isMember ? (
               <>
@@ -223,8 +237,8 @@ export default function Results() {
           </div>
         )}
 
-        <div className="grid" style={{ marginTop: "24px" }}>
-          <div className="card">
+        <div className="result-evidence-grid">
+          <div className="result-evidence-block">
             <strong>On-Chain Verification</strong>
             <p>Proposal ID: #{selected.id}</p>
             <p>
@@ -235,13 +249,13 @@ export default function Results() {
             </p>
             <p>Status: {selected.finalized ? "Finalized" : "Open for reveal/finalization"}</p>
           </div>
-          <div className="card">
+          <div className="result-evidence-block">
             <strong>{selected.privacyMode === "SecretSealed" ? "Threshold Accounting" : "Commit-Reveal Accounting"}</strong>
             <p>{selected.privacyMode === "SecretSealed" ? "Private ballots" : "Total commitments"}: {selected.votesCast}</p>
             <p>{selected.privacyMode === "SecretSealed" ? "Tally approvals" : "Verified reveals"}: {selected.privacyMode === "SecretSealed" ? `${selected.tallyApprovalCount}/${selected.threshold}` : selected.revealCount}</p>
             <p>{selected.privacyMode === "SecretSealed" ? "Tally hash" : "Unrevealed commitments"}: {selected.privacyMode === "SecretSealed" ? selected.tallyHash.slice(0, 10) : unrevealed}</p>
           </div>
-          <div className="card">
+          <div className="result-evidence-block">
             <strong>Governance Rules</strong>
             <p>{selected.allowlistEnabled ? `${selected.allowedVoterCount} allowlisted voters` : "Public proposal"}</p>
             <p>Voting ended: {formatDateTime(selected.endTs)}</p>
@@ -257,27 +271,20 @@ export default function Results() {
   }
 
   return (
-    <div className="results-overview">
-      <div className="voters-header">
-        <div>
-          <h3 className="section-title">Election Results</h3>
-          <p className="hero-copy" style={{ fontSize: "16px", margin: 0, opacity: 0.7 }}>
-            Outcomes finalized by the CipherBallot contract on BOT Chain.
-          </p>
-        </div>
-      </div>
+    <section className="app-page results-overview">
+      <PageHeader title="Results ledger" description="Review pending tallies and finalized outcomes recorded by the CipherBallot contract on BOT Chain." />
 
       {loading ? (
-        <div className="loading-state">Syncing with BOT Chain...</div>
+        <div className="loading-state app-loading-state">Syncing with BOT Chain...</div>
       ) : rows.length === 0 ? (
-        <div className="empty-state">No proposals found.</div>
+        <div className="app-empty-state"><strong>No results found</strong><p>Create a proposal and collect ballots before an outcome can appear here.</p></div>
       ) : (
-        <div className="proposal-grid">
+        <div className="results-ledger">
           {rows.map((proposal) => (
             <ResultCard key={proposal.id} proposal={proposal} />
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

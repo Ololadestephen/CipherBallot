@@ -18,6 +18,20 @@ Key features include secret-sealed threshold proposal mode, committee tally appr
 - App: https://www.cipherballot.xyz
 - BOT Chain explorer: https://scan.bohr.life/
 
+### Current Security-Hardened Deployment
+
+- Contract address: `0x3C250cBf439431D7dd8525Ca9800c577a9533e3C`
+- Deployment transaction: `0x656445179fecda3b26bbb925a15f40ceb0bc24e2cc33fa57556be359d144dd67`
+- Deployment block: `19063989`
+- Verified contract: https://scan.bohr.life/address/0x3C250cBf439431D7dd8525Ca9800c577a9533e3C
+
+### Previous Agent-Native Deployment (Historical)
+
+- Contract address: `0x8FA1B5439772a42BD8d9B545a8C3DfD54E828931`
+- Deployment transaction: `0x42e40618d51136a315b7f4bd9c913610b274182ce5d5d251ed511c9864890d77`
+
+### Challenge V1 Deployment (Historical)
+
 - Contract address: `0x1559C3a6B02E331307438D7839016EA5A827F467`
 - Deployment transaction: `0xbf980106ddc84a21f933faa954a5bc809b361b21569e6e5aca00d92a8fa90329`
 - Contract explorer: https://scan.bohr.life/address/0x1559C3a6B02E331307438D7839016EA5A827F467
@@ -31,7 +45,7 @@ CipherBallot uses an EVM contract on BOT Chain with two privacy modes.
 
 Recommended demo mode is secret-sealed threshold voting. A proposal creator sets committee addresses, a threshold, and a tally secret commitment. Voters submit one private ballot transaction during the active window. After the deadline, committee members independently approve the same final tally, transcript URI, tally proof hash, and shared tally secret on-chain. The contract finalizes only when approvals reach the threshold, and mismatched tally approvals are rejected.
 
-This keeps V1 practical for the challenge while leaving full threshold encryption keys, distributed key generation, and ZK-backed decryption proofs as the V2 privacy upgrade.
+The current contract additionally validates encrypted-ballot commitments, election public keys, bounded proposal inputs, and tally totals. Distributed key generation, threshold decryption, and ZK-backed tally correctness remain future cryptographic upgrades.
 
 The fallback mode is commit-reveal.
 

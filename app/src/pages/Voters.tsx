@@ -1,145 +1,131 @@
+import { ChevronLeft, ChevronRight, Plus, RefreshCw, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BOT_CHAIN, fetchProposals, type ProposalView, useEvmWallet } from "../lib/evm";
+import { PageHeader } from "../components/PageHeader";
 import { ProposalCard } from "../components/ProposalCard";
 import { RevealReminderPanel } from "../components/RevealReminderPanel";
+import { BOT_CHAIN, fetchProposals, type ProposalView, useEvmWallet } from "../lib/evm";
+
+const filters = ["All", "Active", "Reveal", "Tallying", "Finalized"] as const;
+type ProposalFilter = typeof filters[number];
 
 export default function Voters() {
   const wallet = useEvmWallet();
   const navigate = useNavigate();
   const [allProposals, setAllProposals] = useState<ProposalView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"All" | "Active" | "Reveal" | "Tallying" | "Finalized">("All");
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<ProposalFilter>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 6;
+  const pageSize = 6;
 
   const loadProposals = async (showLoading = allProposals.length === 0) => {
     if (showLoading) setLoading(true);
+    else setRefreshing(true);
     try {
       setAllProposals(await fetchProposals());
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     void loadProposals(true);
-    const intervalId = window.setInterval(() => void loadProposals(false), 60000);
+    const intervalId = window.setInterval(() => void loadProposals(false), 60_000);
     return () => window.clearInterval(intervalId);
   }, []);
 
   const filteredProposals = useMemo(() => {
     let result = allProposals;
-    if (filter !== "All") {
-      result = result.filter((proposal) => proposal.status === filter);
-    }
+    if (filter !== "All") result = result.filter((proposal) => proposal.status === filter);
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(p => p.title.toLowerCase().includes(q) || String(p.id) === q);
+      const query = searchQuery.trim().toLowerCase();
+      result = result.filter((proposal) => proposal.title.toLowerCase().includes(query) || String(proposal.id) === query);
     }
     return result;
   }, [allProposals, filter, searchQuery]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filter, searchQuery]);
+  useEffect(() => setCurrentPage(1), [filter, searchQuery]);
 
   const paginatedProposals = useMemo(() => {
-    const startIndex = (currentPage - 1) * PAGE_SIZE;
-    return filteredProposals.slice(startIndex, startIndex + PAGE_SIZE);
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredProposals.slice(startIndex, startIndex + pageSize);
   }, [filteredProposals, currentPage]);
-  
-  const totalPages = Math.ceil(filteredProposals.length / PAGE_SIZE);
+
+  const totalPages = Math.ceil(filteredProposals.length / pageSize);
+  const networkReady = wallet.connected && wallet.chainId === BOT_CHAIN.chainId;
 
   return (
-    <section>
-      <div className="voters-header">
-        <div>
-          <h3 className="section-title">Voter Dashboard</h3>
-          <p className="hero-copy" style={{ margin: 0, fontSize: "16px", maxWidth: "none" }}>
-            Submit private ballots on BOT Chain without exposing live vote choices.
-          </p>
-        </div>
-        <div className="status-badge">
-          <span className="label">Network:</span>
-          <span className={`value ${wallet.chainId === BOT_CHAIN.chainId ? "success" : "warning"}`}>
-            {wallet.chainId === BOT_CHAIN.chainId ? "BOT Chain" : "Switch Required"}
-          </span>
-        </div>
-      </div>
+    <section className="app-page voters-page">
+      <PageHeader
+        title="Proposal explorer"
+        description="Find an open decision, review its privacy policy, and submit an encrypted ballot on BOT Chain."
+        status={
+          <div className={`network-indicator ${networkReady ? "ready" : "attention"}`}>
+            <span />
+            {networkReady ? "BOT Chain connected" : wallet.connected ? "Network switch required" : "Wallet not connected"}
+          </div>
+        }
+        actions={
+          <button className="button-ghost icon-command" onClick={() => navigate("/creators")}>
+            <Plus size={16} /> Create proposal
+          </button>
+        }
+      />
 
-      <div style={{ marginTop: "24px", marginBottom: "32px", display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {["All", "Active", "Reveal", "Tallying", "Finalized"].map((item) => (
-            <button
-              key={item}
-              onClick={() => setFilter(item as typeof filter)}
-              className={`filter-chip ${filter === item ? "active" : ""}`}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "99px",
-                border: `1px solid ${filter === item ? "var(--primary)" : "var(--stroke)"}`,
-                background: filter === item ? "rgba(123, 97, 255, 0.15)" : "transparent",
-                color: filter === item ? "#fff" : "var(--text-secondary)",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: 600
-              }}
-            >
-              {item}
-            </button>
+      <div className="proposal-toolbar">
+        <div className="segmented-filter" aria-label="Filter proposals">
+          {filters.map((item) => (
+            <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>
           ))}
         </div>
-        <input 
-          type="text" 
-          placeholder="Search by title or ID..." 
-          className="input" 
-          style={{ maxWidth: "300px", margin: 0 }} 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="proposal-toolbar-actions">
+          <label className="search-control">
+            <Search size={16} />
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search title or ID" />
+          </label>
+          <button className="icon-button" title="Refresh proposals" aria-label="Refresh proposals" onClick={() => void loadProposals(false)} disabled={refreshing}>
+            <RefreshCw size={16} className={refreshing ? "spin" : ""} />
+          </button>
+        </div>
       </div>
 
       {loading ? (
-        <div className="loading-state">Loading BOT Chain proposals...</div>
+        <div className="loading-state app-loading-state">Reading proposals from BOT Chain...</div>
       ) : (
         <>
           <RevealReminderPanel proposals={allProposals} />
-          <div className="proposal-grid">
-            {paginatedProposals.map((proposal) => (
-              <ProposalCard key={proposal.id} proposal={proposal} onUpdate={() => void loadProposals(false)} />
-            ))}
-            {filteredProposals.length === 0 && (
-              <div className="empty-state">
-                <strong>No Proposals Found</strong>
-                <p>Try another status filter or create a new proposal.</p>
-                <button className="cta" style={{ marginTop: "16px" }} onClick={() => navigate("/creators")}>
-                  Create a Proposal
-                </button>
-              </div>
-            )}
+          <div className="proposal-results-meta">
+            <span>{filteredProposals.length} proposal{filteredProposals.length === 1 ? "" : "s"}</span>
+            <span>Updated from contract state</span>
           </div>
-          {totalPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "32px" }}>
-              <button 
-                className="button-ghost" 
-                disabled={currentPage === 1} 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-              <span style={{ display: "flex", alignItems: "center", fontSize: "14px", color: "var(--text-secondary)" }}>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button 
-                className="button-ghost" 
-                disabled={currentPage === totalPages} 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </button>
+
+          {filteredProposals.length ? (
+            <div className="proposal-grid">
+              {paginatedProposals.map((proposal) => (
+                <ProposalCard key={proposal.id} proposal={proposal} onUpdate={() => void loadProposals(false)} />
+              ))}
             </div>
+          ) : (
+            <div className="app-empty-state">
+              <strong>No matching proposals</strong>
+              <p>Change the status filter, clear your search, or start a new governance decision.</p>
+              <button className="cta icon-command" onClick={() => navigate("/creators")}><Plus size={16} /> Create proposal</button>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <nav className="app-pagination" aria-label="Proposal pages">
+              <button className="icon-button" aria-label="Previous page" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
+                <ChevronLeft size={17} />
+              </button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button className="icon-button" aria-label="Next page" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
+                <ChevronRight size={17} />
+              </button>
+            </nav>
           )}
         </>
       )}

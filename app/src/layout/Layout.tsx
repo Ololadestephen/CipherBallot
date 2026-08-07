@@ -1,24 +1,29 @@
-import { Link, NavLink } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { AlertTriangle, ChevronDown, Code2, ExternalLink, LogOut, WalletCards, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { BOT_CHAIN, shortAddress, useEvmWallet } from "../lib/evm";
+
+const appLinks = [
+  { to: "/voters", label: "Voters" },
+  { to: "/creators", label: "Creators" },
+  { to: "/agents", label: "Agents" },
+  { to: "/results", label: "Results" },
+  { to: "/proof", label: "Proof" },
+  { to: "/docs", label: "Docs" }
+];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showDisconnect, setShowDisconnect] = useState(false);
   const wallet = useEvmWallet();
+  const location = useLocation();
+  const isHome = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      if (currentScrollY < 10) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false); // Hide when scrolling down & not at top
-      } else {
-        setIsVisible(true); // Show when scrolling up
-      }
+      setIsVisible(currentScrollY < 10 || currentScrollY <= lastScrollY || currentScrollY <= 100);
       setLastScrollY(currentScrollY);
     };
 
@@ -26,101 +31,112 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
+  useEffect(() => {
+    setShowDisconnect(false);
+    setIsVisible(true);
+    window.scrollTo({ top: 0, left: 0 });
+  }, [location.pathname]);
+
   return (
-    <div className="app-shell">
-      <header className={`topbar glass-panel ${!isVisible ? 'hidden' : ''}`} style={{ borderBottom: '1px solid var(--stroke)' }}>
-        <div className="brand">
-          <Link to="/" className="brand-link">
-            <span className="brand-mark">C</span>
+    <div className={`app-shell ${isHome ? "home-route" : "app-route"}`}>
+      <header className={`topbar ${!isVisible ? "hidden" : ""}`}>
+        <div className="topbar-inner">
+          <Link to="/" className="brand-link" aria-label="CipherBallot home">
+            <span className="brand-mark" aria-hidden="true">
+              <img src="/brand/cipherballot-mark.png" alt="" />
+            </span>
             <span>CipherBallot</span>
           </Link>
-        </div>
-        <div className="nav-pill">
-          <NavLink to="/" end>
-            Explore
-          </NavLink>
-          <NavLink to="/voters">Voters</NavLink>
-          <NavLink to="/creators">Creators</NavLink>
-          <NavLink to="/results">Results</NavLink>
-          <NavLink to="/proof">Proof</NavLink>
-          <NavLink to="/docs">Docs</NavLink>
-        </div>
-        <div className="nav-actions">
-          {wallet.connected && wallet.chainId !== BOT_CHAIN.chainId ? (
-            <button className="cta" onClick={() => wallet.switchToBotChain()}>
-              Add / Switch BOT Chain
-            </button>
-          ) : wallet.connected ? (
-            <div style={{ position: "relative" }}>
-               <button className="cta" onClick={() => setShowDisconnect(!showDisconnect)}>
-                 {shortAddress(wallet.account)}
-               </button>
-               {showDisconnect && (
-                 <div style={{ 
-                   position: "absolute", top: "100%", right: 0, marginTop: "8px", 
-                   background: "var(--bg-card)", border: "1px solid var(--stroke)", 
-                   borderRadius: "var(--radius)", padding: "4px", zIndex: 100,
-                   boxShadow: "0 10px 30px rgba(0,0,0,0.5)"
-                 }}>
-                   <button 
-                     className="button-ghost" 
-                     style={{ color: "var(--danger)", width: "100%", whiteSpace: "nowrap", padding: "10px 20px", fontSize: "13px", fontWeight: 600, border: "none", display: "flex", justifyContent: "flex-start" }}
-                     onClick={() => { wallet.disconnect(); setShowDisconnect(false); }}
-                   >
-                     Disconnect Wallet
-                   </button>
-                 </div>
-               )}
-            </div>
-          ) : (
-            <button className="cta" onClick={() => wallet.connect()} disabled={wallet.connecting}>
-              {wallet.connecting ? "Connecting..." : "Connect Wallet"}
-            </button>
-          )}
+
+          <nav className="nav-pill" aria-label="Primary navigation">
+            {appLinks.map((item) => (
+              <NavLink key={item.to} to={item.to}>{item.label}</NavLink>
+            ))}
+          </nav>
+
+          <div className="nav-actions">
+            {wallet.connected && wallet.chainId !== BOT_CHAIN.chainId ? (
+              <button
+                className="shell-wallet-button"
+                onClick={() => void wallet.switchToBotChain()}
+                disabled={wallet.switchingNetwork}
+                aria-busy={wallet.switchingNetwork}
+                aria-label="Switch to BOT Chain Testnet"
+              >
+                <WalletCards size={16} />
+                <span>{wallet.switchingNetwork ? "Switching..." : "Switch network"}</span>
+              </button>
+            ) : wallet.connected ? (
+              <div className="wallet-menu">
+                <button className="shell-wallet-button" onClick={() => setShowDisconnect((visible) => !visible)} aria-expanded={showDisconnect}>
+                  <span className="wallet-status-dot" />
+                  <span>{shortAddress(wallet.account)}</span>
+                  <ChevronDown size={14} />
+                </button>
+                {showDisconnect && (
+                  <div className="wallet-dropdown">
+                    <button onClick={() => { wallet.disconnect(); setShowDisconnect(false); }}>
+                      <LogOut size={15} />
+                      Disconnect
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button className="shell-wallet-button shell-wallet-primary" onClick={() => wallet.connect()} disabled={wallet.connecting}>
+                <WalletCards size={16} />
+                <span>{wallet.connecting ? "Connecting..." : "Connect wallet"}</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
-      <main>{children}</main>
 
-      <footer className="footer glass-panel" style={{ marginTop: 'auto', borderTop: '1px solid var(--stroke)' }}>
-        <div style={{ maxWidth: '1120px', margin: '0 auto', padding: '40px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px' }}>
+      {wallet.networkError && (
+        <div className="network-alert" role="alert">
+          <AlertTriangle size={17} aria-hidden="true" />
+          <span>{wallet.networkError}</span>
+          <button type="button" onClick={wallet.clearNetworkError} aria-label="Dismiss network error">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
-          {/* Brand Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="brand-link" style={{ fontSize: '20px' }}>
-              <span className="brand-mark" style={{ width: '32px', height: '32px' }}>C</span>
+      <main className={isHome ? "main-home" : undefined}>{children}</main>
+
+      <footer className="site-footer">
+        <div className="site-footer-inner">
+          <div className="site-footer-brand">
+            <Link to="/" className="brand-link">
+              <span className="brand-mark" aria-hidden="true">
+                <img src="/brand/cipherballot-mark.png" alt="" />
+              </span>
               <span>CipherBallot</span>
-            </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
-              Privacy-preserving governance on BOT Chain. Submit private ballots once, reach committee threshold after the deadline, and verify final results on-chain.
-            </p>
+            </Link>
+            <p>Agent-native private governance on BOT Chain. Encrypt ballots, delegate scoped authority, and verify final decisions on-chain.</p>
           </div>
 
-          {/* Quick Links */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>App</h4>
-            <Link to="/" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Explore Proposals</Link>
-            <Link to="/creators" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Create Proposal</Link>
-            <Link to="/voters" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Voter Dashboard</Link>
-            <Link to="/results" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Results History</Link>
-            <Link to="/proof" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">BOT Chain Proof</Link>
+          <div className="site-footer-column">
+            <strong>Product</strong>
+            <Link to="/voters">Explore proposals</Link>
+            <Link to="/creators">Create proposal</Link>
+            <Link to="/agents">Agent access</Link>
+            <Link to="/results">Results</Link>
           </div>
 
-          {/* Resources */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Resources</h4>
-            <Link to="/docs" style={{ color: 'var(--text-secondary)', fontSize: '14px', transition: 'color 0.2s' }} className="footer-link">Documentation</Link>
-            <a href="https://dev-docs.botchain.ai/docs/Developers/quick-guide/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)', fontSize: '14px' }} className="footer-link">BOT Chain Docs</a>
-            <a href="https://github.com/Ololadestephen/CipherBallot" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)', fontSize: '14px' }} className="footer-link">GitHub</a>
+          <div className="site-footer-column">
+            <strong>Protocol</strong>
+            <Link to="/proof">BOT Chain proof</Link>
+            <Link to="/docs">Documentation</Link>
+            <a href="https://dev-docs.botchain.ai/docs/Developers/quick-guide/" target="_blank" rel="noopener noreferrer">
+              BOT Chain docs <ExternalLink size={13} />
+            </a>
+            <a href="https://github.com/Ololadestephen/CipherBallot" target="_blank" rel="noopener noreferrer">
+              GitHub <Code2 size={13} />
+            </a>
           </div>
-
         </div>
-
-        {/* Sub-footer */}
-        <div style={{ borderTop: '1px solid var(--stroke)', padding: '24px', textAlign: 'center' }}>
-          <p style={{ margin: 0, color: '#444', fontSize: '13px' }}>
-            © 2026 CipherBallot.
-          </p>
-        </div>
+        <div className="site-footer-bottom">© 2026 CipherBallot.</div>
       </footer>
     </div>
   );

@@ -1,6 +1,6 @@
 # BOT Chain Deployment Notes
 
-CipherBallot is an EVM private governance app for BOT Chain with secret-sealed threshold voting and commit-reveal fallback.
+CipherBallot is an EVM private governance app for BOT Chain with encrypted committee-sealed voting, delegated agent voting, and commit-reveal fallback.
 
 ## Network
 
@@ -11,19 +11,25 @@ CipherBallot is an EVM private governance app for BOT Chain with secret-sealed t
 
 ## Deployment
 
-- Contract: `0x1559C3a6B02E331307438D7839016EA5A827F467`
-- Transaction: `0xbf980106ddc84a21f933faa954a5bc809b361b21569e6e5aca00d92a8fa90329`
-- Explorer: https://scan.bohr.life/address/0x1559C3a6B02E331307438D7839016EA5A827F467
+- Security-hardened agent-native contract: `0x3C250cBf439431D7dd8525Ca9800c577a9533e3C`
+- Transaction: `0x656445179fecda3b26bbb925a15f40ceb0bc24e2cc33fa57556be359d144dd67`
+- Deployment block: `19063989`
+- Verified explorer: https://scan.bohr.life/address/0x3C250cBf439431D7dd8525Ca9800c577a9533e3C
+- Source verification: BOTScan verified
+
+Previous agent-native deployment: `0x8FA1B5439772a42BD8d9B545a8C3DfD54E828931`.
 
 ## Privacy Model
 
-### Secret-Sealed Threshold Mode
+### Committee-Sealed Mode
 
-1. A proposal is created with 2-8 voting options, a voting window, committee members, threshold, and a tally secret commitment.
-2. A voter submits one private ballot transaction during the active window.
-3. After the deadline, committee members review the tally transcript.
-4. Committee members approve the same final tally, transcript URI, tally proof hash, and tally secret on-chain.
-5. The contract finalizes only after the approval threshold is reached.
+1. The committee generates an election key pair and keeps the private key off-chain.
+2. A proposal publishes the election public key with its options, window, committee, threshold, and tally secret commitment.
+3. Voters and authorized agents encrypt choices locally with ephemeral ECDH and AES-256-GCM.
+4. The contract records encrypted ballot commitments without publishing live choices.
+5. After the deadline, committee tooling decrypts and verifies the ballots and produces a tally transcript.
+6. Committee members approve the same final tally, transcript URI, tally proof hash, and tally secret on-chain.
+7. The contract finalizes only after the approval threshold is reached.
 
 ### Commit-Reveal Fallback
 

@@ -9,6 +9,7 @@ import ProposalDetails from "./pages/ProposalDetails";
 import Docs from "./pages/Docs";
 import Proof from "./pages/Proof";
 import NotFound from "./pages/NotFound";
+import Agents from "./pages/Agents";
 
 const proposals = [
   {
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/voters" element={<Voters />} />
         <Route path="/creators" element={<Creators />} />
+        <Route path="/agents" element={<Agents />} />
         <Route path="/proposal/:id" element={<ProposalDetails />} />
         <Route path="/results" element={<Results />} />
         <Route path="/proof" element={<Proof />} />
