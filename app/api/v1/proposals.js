@@ -1,7 +1,6 @@
 import {
   CHAIN_ID,
   assertRuntimeConfiguration,
-  enforceRateLimit,
   errorMessage,
   getProvider,
   getReadonlyContract,
@@ -9,6 +8,27 @@ import {
   sendJson,
   setCors
 } from "../_lib/cipherballot.js";
+import { assertRelayStoreConfiguration, consumeRateLimit } from "../_lib/relay-store.js";
+
+function requestHeader(req, name) {
+  const entry = Object.entries(req.headers || {}).find(([key]) => key.toLowerCase() === name.toLowerCase());
+  const value = entry?.[1];
+  return Array.isArray(value) ? value[0] : String(value || "");
+}
+
+async function enforceDistributedLimit(req, res) {
+  assertRelayStoreConfiguration();
+  const configured = Number.parseInt(String(process.env.AGENT_API_RATE_LIMIT_PER_MINUTE || "30"), 10);
+  const limit = Number.isFinite(configured) ? Math.min(Math.max(configured, 1), 600) : 30;
+  const forwardedFor = requestHeader(req, "x-forwarded-for").split(",")[0].trim();
+  const address = forwardedFor || requestHeader(req, "x-real-ip") || req.socket?.remoteAddress || "unknown";
+  const result = await consumeRateLimit("api", `${address}:${requestHeader(req, "x-api-key")}`, limit);
+  res.setHeader("X-RateLimit-Remaining", String(result.remaining));
+  if (result.allowed) return true;
+  res.setHeader("Retry-After", String(result.retryAfter));
+  sendJson(res, 429, { error: "Agent API rate limit exceeded. Try again shortly." });
+  return false;
+}
 
 export default async function handler(req, res) {
   const corsAllowed = setCors(req, res);
@@ -16,9 +36,9 @@ export default async function handler(req, res) {
   if (!corsAllowed) return sendJson(res, 403, { error: "Origin not allowed." });
   if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed." });
   if (!requireApiKey(req, res)) return;
-  if (!enforceRateLimit(req, res)) return;
 
   try {
+    if (!(await enforceDistributedLimit(req, res))) return;
     await assertRuntimeConfiguration();
     const contract = getReadonlyContract();
     const [proposalCount, latestBlock] = await Promise.all([
@@ -80,7 +100,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     const message = errorMessage(error);
-    if (message.includes("configured") || message.includes("chain ID") || message.includes("deployed contract") || message.includes("VITE_")) {
+    if (message.includes("configured") || message.includes("chain ID") || message.includes("deployed contract") || message.includes("VITE_") || message.includes("Redis REST")) {
       return sendJson(res, 503, { error: "Agent API configuration is unavailable." });
     }
     return sendJson(res, 500, { error: "Unable to load proposals from BOT Chain." });

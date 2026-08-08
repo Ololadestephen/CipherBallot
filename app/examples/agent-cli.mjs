@@ -17,6 +17,7 @@ Usage:
   npm run agent -- vote-as-agent '<proposal-brief-json>' --option 0
   npm run agent -- vote-for-voter '<proposal-brief-json>' --option 0 [--voter 0x...]
   npm run agent -- submit-signed '<signed-vote-json>'
+  npm run agent -- status cb_RelayJobId
   npm run agent -- status 0xTransactionHash
 
 Use @path/to/packet.json instead of inline JSON to read a packet from a file.
@@ -46,8 +47,10 @@ function publicVoteResult(result) {
     status: result.status,
     mode: result.mode,
     ballotOwner: result.ballotOwner,
+    jobId: result.jobId,
     txHash: result.txHash,
-    explorerUrl: result.explorerUrl
+    explorerUrl: result.explorerUrl,
+    statusUrl: result.statusUrl
   };
 }
 

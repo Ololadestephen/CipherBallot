@@ -10,12 +10,15 @@
     "preview": "vite preview",
     "test:crypto": "node examples/test-ballot-envelope.mjs",
     "test:agent-client": "node examples/test-agent-client.mjs",
+    "test:relay-store": "node examples/test-relay-store.mjs",
     "test:e2e": "forge build --root .. && node examples/local-agent-e2e.mjs",
     "agent": "node examples/agent-cli.mjs",
     "keygen": "node examples/generate-election-key.mjs",
     "tally": "node examples/tally-encrypted-ballots.mjs"
   },
   "dependencies": {
+    "@upstash/qstash": "^2.11.3",
+    "@upstash/redis": "^1.38.2",
     "@vercel/analytics": "^1.6.1",
     "clsx": "^2.1.1",
     "ethers": "^6.15.0",

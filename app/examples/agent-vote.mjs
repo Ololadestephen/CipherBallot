@@ -30,6 +30,8 @@ console.log(JSON.stringify({
   status: result.status,
   mode: result.mode,
   ballotOwner: result.ballotOwner,
+  jobId: result.jobId,
   txHash: result.txHash,
-  explorerUrl: result.explorerUrl
+  explorerUrl: result.explorerUrl,
+  statusUrl: result.statusUrl
 }, null, 2));

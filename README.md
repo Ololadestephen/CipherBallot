@@ -111,7 +111,9 @@ The Vite and React application in [`app/`](app/) provides wallet connection, BOT
 
 ```text
 GET  /api/v1/proposals
+GET  /api/v1/health
 POST /api/v1/votes
+GET  /api/v1/votes?jobId=cb_...
 GET  /api/v1/votes?txHash=0x...
 ```
 
@@ -123,6 +125,8 @@ The vote endpoint accepts ciphertext rather than a plaintext option. Before spen
 - the signature nonce and deadline;
 - delegation scope and expiry when applicable;
 - the mode-specific EIP-712 signature through contract simulation.
+
+Accepted ballots receive a deterministic relay `jobId`. Redis persists the encrypted request and execution state, while a QStash FIFO queue invokes one signed worker request at a time. Agents can poll the job until it is confirmed or fails. Duplicate submissions return the existing job instead of spending gas twice.
 
 The API key protects relayer resources; it does not grant voting authority. Authority comes from the voter or agent signature and, in delegated mode, the on-chain delegation.
 
@@ -156,12 +160,13 @@ npm run agent -- inspect '<proposal-brief-json>'
 npm run agent -- vote-for-voter '<proposal-brief-json>' --option 0
 npm run agent -- vote-as-agent '<proposal-brief-json>' --option 0
 npm run agent -- submit-signed '<signed-vote-json>'
+npm run agent -- status cb_RelayJobId
 npm run agent -- status 0xTransactionHash
 ```
 
 The reusable client is in [`app/examples/lib/agent-client.mjs`](app/examples/lib/agent-client.mjs), and the execution instructions are in [`.agents/skills/cipherballot-agent/SKILL.md`](.agents/skills/cipherballot-agent/SKILL.md).
 
-The current release is agent-executable, not fully unattended. Persistent proposal monitoring, policy-based decision engines, durable job coordination, and autonomous scheduling remain roadmap work.
+The current release is agent-executable, not fully unattended. Persistent proposal monitoring, policy-based decision engines, and autonomous scheduling remain roadmap work.
 
 ## Local Development
 
@@ -209,6 +214,14 @@ AGENT_API_RATE_LIMIT_PER_MINUTE=30
 AGENT_SIGNER_RATE_LIMIT_PER_MINUTE=10
 AGENT_VOTE_MAX_DEADLINE_SECONDS=3600
 AGENT_RELAY_MAX_GAS=500000
+KV_REST_API_URL=<SERVER_ONLY_REDIS_REST_URL>
+KV_REST_API_TOKEN=<SERVER_ONLY_REDIS_WRITE_TOKEN>
+QSTASH_TOKEN=<SERVER_ONLY_QSTASH_TOKEN>
+QSTASH_CURRENT_SIGNING_KEY=<SERVER_ONLY_SIGNING_KEY>
+QSTASH_NEXT_SIGNING_KEY=<SERVER_ONLY_SIGNING_KEY>
+QSTASH_QUEUE_NAME=cipherballot-relayer-v1
+AGENT_RELAY_WORKER_URL=https://www.cipherballot.xyz/api/internal/relay-worker
+AGENT_RELAY_PUBLIC_URL=https://www.cipherballot.xyz
 ```
 
 Never expose the relayer key, agent key, API key, election private key, tally secret, or any wallet private key through a `VITE_` variable.
@@ -250,6 +263,7 @@ Cryptography and packet-format tests:
 cd app
 npm run test:crypto
 npm run test:agent-client
+npm run test:relay-store
 ```
 
 Full relay lifecycle on an ephemeral Anvil chain:
@@ -259,7 +273,7 @@ cd app
 npm run test:e2e
 ```
 
-The E2E suite deploys a fresh contract, submits delegated, voter-signed, and public-agent encrypted ballots through the API, rejects nonce replay, decrypts after the deadline, and finalizes through two committee approvals.
+The E2E suite deploys a fresh contract, submits delegated, voter-signed, and public-agent encrypted ballots through the API, deduplicates an exact retry, decrypts after the deadline, and finalizes through two committee approvals.
 
 Production build:
 
@@ -307,7 +321,9 @@ Current safeguards include:
 - separate signature types and nonce spaces for delegated, voter-signed, and public-agent ballots;
 - delegation scope, expiry, revocation, and nonce invalidation;
 - API request-size, envelope-size, origin, authentication, rate, and deadline checks;
-- optional relay-signer allowlisting, signer-level throttling, and transaction gas caps;
+- Redis-backed API and signer throttling, idempotent relay jobs, and distributed execution locks;
+- a QStash-authenticated FIFO worker with one active relay at a time;
+- optional relay-signer allowlisting and transaction gas caps;
 - contract simulation before the relayer broadcasts a transaction;
 - matching tally hashes across committee approvals;
 - blocked finalization while voting is active.
@@ -317,9 +333,9 @@ Current safeguards include:
 - **Election key custody:** The current release uses one committee-custodied election private key. Ballot confidentiality depends on that key remaining unavailable until voting closes.
 - **Threshold semantics:** The smart contract enforces threshold approval of one final tally. It does not yet implement distributed key generation or true threshold decryption.
 - **Tally verification:** Committee members validate and approve the tally transcript. A public zero-knowledge proof of correct decryption and tallying is not yet enforced on-chain.
-- **Relayer coordination:** In-memory reservations and `NonceManager` protect one warm API instance. Multi-instance production operation requires a single-writer queue or distributed nonce lock plus platform-level rate limiting.
+- **Relayer coordination:** Redis persists jobs, throttles, and locks across serverless instances. QStash delivers jobs through one FIFO queue, and the worker reconciles submitted transactions before retrying. Operational monitoring, spending alerts, and provider availability remain deployment responsibilities.
 - **Audit status:** The contract and relayer have automated test coverage but have not completed an independent production security audit.
-- **Dependency status:** React Router 6 currently has two moderate advisories affecting SSR hydration and untrusted navigation targets. CipherBallot uses neither path; a breaking v7 migration remains tracked rather than force-applied.
+- **Dependency status:** React Router is on the patched v7 line and the production dependency audit currently reports zero known vulnerabilities.
 
 Do not use the current testnet deployment for binding elections or high-value governance without an independent security review and an operational key-management process.
 
@@ -328,7 +344,6 @@ Do not use the current testnet deployment for binding elections or high-value go
 - Independent contract, cryptography, and relayer security review.
 - Distributed key generation and threshold decryption.
 - Public proof verification for decrypted ballots and final tallies.
-- Durable relayer queue, distributed rate limiting, and transaction reconciliation.
 - Persistent agent runner with user-defined policies, safe abstention, and auditable decision receipts.
 - Token, NFT, and community membership eligibility modules.
 - Event indexing, notifications, and richer governance analytics.

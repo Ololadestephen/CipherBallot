@@ -28,6 +28,7 @@ npm run agent -- inspect '<proposal-brief-json>'
 npm run agent -- vote-for-voter '<proposal-brief-json>' --option 0
 npm run agent -- vote-as-agent '<proposal-brief-json>' --option 0
 npm run agent -- submit-signed '<signed-vote-json>'
+npm run agent -- status cb_RelayJobId
 npm run agent -- status 0xTransactionHash
 ```
 
@@ -46,6 +47,7 @@ delegation and a voter address in the proposal brief, `--voter`, or
 3. `vote-as-agent`: vote under the agent's own address on an open public
    proposal. No voter authorization is involved.
 
-After submission, return the execution mode, ballot owner, transaction hash,
-explorer URL, and confirmation status. Do not claim the vote is finalized until
-the transaction receipt confirms it.
+After submission, return the execution mode, ballot owner, relay job ID, and
+status URL. Poll the job ID until it is confirmed or failed, then return the
+transaction hash and explorer URL when available. Do not claim the vote is
+confirmed until the durable relay job reports confirmation.

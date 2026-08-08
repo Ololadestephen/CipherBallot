@@ -412,14 +412,32 @@ export async function voteWithAgent(runtime, options) {
   return { ...relay, proposal: prepared.proposal, privateReceipt: prepared.privateReceipt };
 }
 
-export async function readVoteStatus(runtime, txHash) {
-  if (!isHexString(txHash, 32)) throw new Error("Transaction hash must be 32-byte hex.");
-  const response = await fetchWithTimeout(`${runtime.apiUrl}/api/v1/votes?txHash=${txHash}`, {
+export async function readVoteStatus(runtime, identifier) {
+  const value = String(identifier || "");
+  const query = /^cb_[0-9a-f]{64}$/.test(value)
+    ? `jobId=${value}`
+    : isHexString(value, 32)
+      ? `txHash=${value}`
+      : "";
+  if (!query) throw new Error("Relay status requires a valid job ID or transaction hash.");
+  const response = await fetchWithTimeout(`${runtime.apiUrl}/api/v1/votes?${query}`, {
     headers: apiHeaders(runtime)
   });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || `Vote API returned ${response.status}.`);
   return payload;
+}
+
+export async function waitForRelayJob(runtime, jobId, { timeoutMs = 90_000, pollMs = 2_000 } = {}) {
+  if (!/^cb_[0-9a-f]{64}$/.test(String(jobId || ""))) throw new Error("A valid relay job ID is required.");
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const status = await readVoteStatus(runtime, jobId);
+    if (status.status === "confirmed") return status;
+    if (status.status === "failed") throw new Error(status.error || "The relay job failed.");
+    await new Promise((resolveWait) => setTimeout(resolveWait, pollMs));
+  }
+  throw new Error("Timed out waiting for the relay job to finish.");
 }
 
 export function agentWalletFromEnvironment(runtime) {

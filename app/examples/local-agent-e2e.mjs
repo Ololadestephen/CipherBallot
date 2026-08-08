@@ -128,6 +128,8 @@ try {
   process.env.RELAYER_PRIVATE_KEY = relayer.privateKey;
   process.env.AGENT_API_KEY = "local-e2e-agent-api-key-32-bytes";
   process.env.AGENT_API_ALLOWED_ORIGIN = "http://localhost:5173";
+  process.env.AGENT_RELAY_STORE = "memory";
+  process.env.AGENT_RELAY_EXECUTION = "inline";
 
   const [{ default: proposalsHandler }, { default: votesHandler }] = await Promise.all([
     import("../api/v1/proposals.js"),
@@ -239,6 +241,8 @@ try {
     headers: { ...apiHeaders, "content-type": "application/json" }
   });
   assert.equal(voteResponse.status, 202);
+  assert.match(voteResponse.body.jobId, /^cb_[0-9a-f]{64}$/);
+  assert.equal(voteResponse.body.status, "confirmed");
   const voteReceipt = await provider.waitForTransaction(voteResponse.body.txHash);
   assert.equal(voteReceipt.status, 1);
   assert.equal(await deployed.getPrivateBallotHash(proposalId, voter.address), encrypted.privateBallotHash);
@@ -248,8 +252,9 @@ try {
     body: voteBody,
     headers: { ...apiHeaders, "content-type": "application/json" }
   });
-  assert.equal(replayResponse.status, 409);
-  assert.equal(replayResponse.body.expectedNonce, "1");
+  assert.equal(replayResponse.status, 202);
+  assert.equal(replayResponse.body.jobId, voteResponse.body.jobId);
+  assert.equal(replayResponse.body.txHash, voteResponse.body.txHash);
 
   const oneTimeEncrypted = encryptBallot({
     optionIndex: 1,
@@ -410,7 +415,7 @@ try {
     delegatedAgentVoteRelayed: true,
     voterSignedVoteRelayed: true,
     publicAgentVoteRelayed: true,
-    replayRejected: true,
+    replayDeduplicated: true,
     decryptedOption: decrypted.optionIndex,
     finalTally: tally,
     finalized: finalizedProposal.finalized

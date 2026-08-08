@@ -28,7 +28,9 @@ Public proposals are one-address-one-ballot, not one-person-one-ballot. Sybil re
 
 ## Production Relayer
 
-The included API uses process-local rate limits, relay reservations, and nonce coordination. A multi-instance deployment must add a durable single-writer transaction queue or distributed nonce lock, platform-level rate limiting, spending alerts, and transaction reconciliation. The API key protects relayer funds; voting authority still comes from a valid voter or agent signature.
+The API stores relay jobs, idempotency state, distributed locks, and rate-limit counters in Redis. QStash invokes a signature-verified FIFO worker with queue parallelism fixed at one. The worker rechecks on-chain authorization, nonce, ballot state, deadline, simulation, and gas before submission, then reconciles a stored transaction hash across retries.
+
+Redis and QStash availability are operational dependencies. Production operators should monitor their dead-letter queue, failed jobs, relayer balance, RPC health, and spending. The API key protects relayer funds; voting authority still comes from a valid voter or agent signature.
 
 ## Deployment Status
 

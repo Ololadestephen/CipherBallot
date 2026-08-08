@@ -154,7 +154,9 @@ npm run tally`}</CodeBlock>
             <h2>Discover, submit, and monitor</h2>
             <div className="docs-endpoints">
               <div><code>GET</code><strong>/api/v1/proposals</strong><span>Discover proposals and election public keys.</span></div>
-              <div><code>POST</code><strong>/api/v1/votes</strong><span>Validate and relay a signed encrypted ballot.</span></div>
+              <div><code>GET</code><strong>/api/v1/health</strong><span>Verify BOT Chain, Redis, and the serialized relay queue.</span></div>
+              <div><code>POST</code><strong>/api/v1/votes</strong><span>Validate and queue a signed encrypted ballot.</span></div>
+              <div><code>GET</code><strong>/api/v1/votes?jobId=cb_...</strong><span>Read queued, processing, submitted, confirmed, or failed status.</span></div>
               <div><code>GET</code><strong>/api/v1/votes?txHash=0x...</strong><span>Read pending, confirmed, or reverted status.</span></div>
             </div>
             <h3>Submit a signed ballot</h3>
@@ -174,7 +176,7 @@ npm run tally`}</CodeBlock>
 npm run agent -- vote-for-voter '<proposal-brief-json>' --option 0
 npm run agent -- vote-as-agent '<proposal-brief-json>' --option 0
 npm run agent -- submit-signed '<signed-vote-json>'`}</CodeBlock>
-            <p>The endpoint requires an API key, checks the mode-specific signer authority, nonce, deadline, envelope structure, proof hash, request size, and transaction simulation before spending relayer gas.</p>
+            <p>The endpoint requires an API key, checks the mode-specific signer authority, nonce, deadline, envelope structure, proof hash, request size, and transaction simulation before queueing a deterministic relay job. Redis deduplicates requests and QStash delivers one signed worker request at a time.</p>
           </section>
 
           <section id="contract">
@@ -207,7 +209,15 @@ AGENT_API_ALLOWED_SIGNERS=<OPTIONAL_COMMA_SEPARATED_SIGNERS>
 AGENT_API_RATE_LIMIT_PER_MINUTE=30
 AGENT_SIGNER_RATE_LIMIT_PER_MINUTE=10
 AGENT_VOTE_MAX_DEADLINE_SECONDS=3600
-AGENT_RELAY_MAX_GAS=500000`}</CodeBlock>
+AGENT_RELAY_MAX_GAS=500000
+KV_REST_API_URL=<SERVER_ONLY_REDIS_REST_URL>
+KV_REST_API_TOKEN=<SERVER_ONLY_REDIS_WRITE_TOKEN>
+QSTASH_TOKEN=<SERVER_ONLY_QSTASH_TOKEN>
+QSTASH_CURRENT_SIGNING_KEY=<SERVER_ONLY_SIGNING_KEY>
+QSTASH_NEXT_SIGNING_KEY=<SERVER_ONLY_SIGNING_KEY>
+QSTASH_QUEUE_NAME=cipherballot-relayer-v1
+AGENT_RELAY_WORKER_URL=https://www.cipherballot.xyz/api/internal/relay-worker
+AGENT_RELAY_PUBLIC_URL=https://www.cipherballot.xyz`}</CodeBlock>
           </section>
 
           <section id="security">
@@ -219,10 +229,10 @@ AGENT_RELAY_MAX_GAS=500000`}</CodeBlock>
               <div><strong>Relayer</strong><span>Pays gas but cannot alter signed fields or bypass contract checks.</span></div>
               <div><strong>Committee</strong><span>Currently custodies the election private key and approves one shared tally.</span></div>
             </div>
-            <div className="docs-warning"><strong>Production relayer coordination</strong><p>Use a single-writer transaction queue or distributed nonce lock plus platform-level rate limiting before running multiple serverless instances against one relayer wallet.</p></div>
+            <div className="docs-warning"><strong>Production relayer coordination</strong><p>Redis persists idempotent jobs, locks, and rate limits across instances. A signature-verified QStash FIFO worker serializes relayer transactions and reconciles retries.</p></div>
             <div className="docs-warning"><strong>Current cryptographic boundary</strong><p>V2 uses a committee-custodied election private key plus on-chain threshold tally approval. It does not yet implement distributed key generation or true threshold decryption.</p></div>
             <div className="docs-warning"><strong>Tally correctness boundary</strong><p>The contract caps the final tally by recorded participation and requires matching committee evidence, but it does not yet verify a zero-knowledge proof that every counted choice was decrypted correctly.</p></div>
-            <div className="docs-warning"><strong>Autonomy boundary</strong><p>The current release is agent-executable through briefs, a client, CLI, and skill. Persistent proposal monitoring, policy evaluation, durable jobs, and unattended execution remain roadmap work.</p></div>
+            <div className="docs-warning"><strong>Autonomy boundary</strong><p>The current release is agent-executable through briefs, a client, CLI, and durable relay jobs. Persistent proposal monitoring, policy evaluation, and unattended decision-making remain roadmap work.</p></div>
           </section>
         </article>
 

@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { Contract, JsonRpcProvider, NonceManager, Wallet, getAddress, isAddress, isHexString } from "ethers";
 
 const configuredChainId = Number.parseInt(String(process.env.BOTCHAIN_CHAIN_ID || "968"), 10);
@@ -9,12 +9,6 @@ export const CONTRACT_ADDRESS = (
   process.env.CIPHERBALLOT_CONTRACT_ADDRESS || process.env.VITE_CIPHERBALLOT_CONTRACT_ADDRESS || ""
 ).trim();
 
-const DEFAULT_RATE_LIMIT = 30;
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RELAY_RESERVATION_MS = 60_000;
-const rateLimitBuckets = new Map();
-const signerRateLimitBuckets = new Map();
-const relayReservations = new Map();
 let provider;
 let readonlyContract;
 let relayerContract;
@@ -84,54 +78,6 @@ export function requireApiKey(req, res) {
   return false;
 }
 
-export function enforceRateLimit(req, res) {
-  const configuredLimit = Number.parseInt(String(process.env.AGENT_API_RATE_LIMIT_PER_MINUTE || DEFAULT_RATE_LIMIT), 10);
-  const limit = Number.isFinite(configuredLimit) ? Math.min(Math.max(configuredLimit, 1), 600) : DEFAULT_RATE_LIMIT;
-  const forwardedFor = headerValue(req, "x-forwarded-for").split(",")[0].trim();
-  const clientAddress = forwardedFor || headerValue(req, "x-real-ip") || req.socket?.remoteAddress || "unknown";
-  const apiKey = headerValue(req, "x-api-key");
-  const bucketId = createHash("sha256").update(`${clientAddress}:${apiKey}`).digest("hex");
-  const now = Date.now();
-  const current = rateLimitBuckets.get(bucketId);
-  const bucket = !current || current.resetAt <= now
-    ? { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS }
-    : current;
-
-  if (bucket.count >= limit) {
-    res.setHeader("Retry-After", String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))));
-    sendJson(res, 429, { error: "Agent API rate limit exceeded. Try again shortly." });
-    return false;
-  }
-
-  bucket.count++;
-  rateLimitBuckets.set(bucketId, bucket);
-  if (rateLimitBuckets.size > 1_000) {
-    for (const [key, value] of rateLimitBuckets) {
-      if (value.resetAt <= now) rateLimitBuckets.delete(key);
-    }
-  }
-  return true;
-}
-
-export function enforceSignerRateLimit(signer, res) {
-  const configuredLimit = Number.parseInt(String(process.env.AGENT_SIGNER_RATE_LIMIT_PER_MINUTE || "10"), 10);
-  const limit = Number.isFinite(configuredLimit) ? Math.min(Math.max(configuredLimit, 1), 120) : 10;
-  const bucketId = getAddress(signer).toLowerCase();
-  const now = Date.now();
-  const current = signerRateLimitBuckets.get(bucketId);
-  const bucket = !current || current.resetAt <= now
-    ? { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS }
-    : current;
-  if (bucket.count >= limit) {
-    res.setHeader("Retry-After", String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))));
-    sendJson(res, 429, { error: "This ballot signer has reached the relay rate limit." });
-    return false;
-  }
-  bucket.count++;
-  signerRateLimitBuckets.set(bucketId, bucket);
-  return true;
-}
-
 export function isRelaySignerAllowed(signer) {
   const configured = String(process.env.AGENT_API_ALLOWED_SIGNERS || "").trim();
   if (!configured) return true;
@@ -139,20 +85,6 @@ export function isRelaySignerAllowed(signer) {
   if (allowed.some((value) => !isAddress(value))) throw new Error("AGENT_API_ALLOWED_SIGNERS contains an invalid address.");
   const normalized = getAddress(signer).toLowerCase();
   return allowed.some((value) => getAddress(value).toLowerCase() === normalized);
-}
-
-export function reserveRelayIntent(key) {
-  const now = Date.now();
-  for (const [reservationKey, expiresAt] of relayReservations) {
-    if (expiresAt <= now) relayReservations.delete(reservationKey);
-  }
-  if (relayReservations.has(key)) return false;
-  relayReservations.set(key, now + RELAY_RESERVATION_MS);
-  return true;
-}
-
-export function releaseRelayIntent(key) {
-  relayReservations.delete(key);
 }
 
 export function getProvider() {
