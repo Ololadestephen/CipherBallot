@@ -1,0 +1,68 @@
+name: CipherBallot CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Contract, app, and agent checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run contract tests
+        run: forge test
+
+      - name: Test ballot cryptography
+        working-directory: app
+        run: npm run test:crypto
+
+      - name: Test agent client
+        working-directory: app
+        run: npm run test:agent-client
+
+      - name: Test durable relay store
+        working-directory: app
+        run: npm run test:relay-store
+
+      - name: Run local agent-relayer E2E
+        working-directory: app
+        run: npm run test:e2e
+
+      - name: Build production app
+        working-directory: app
+        run: npm run build
+
+      - name: Audit production dependencies
+        working-directory: app
+        run: npm audit --omit=dev --audit-level=high
