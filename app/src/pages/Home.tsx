@@ -116,7 +116,7 @@ export default function Home() {
           ) : (
             <div className="landing-empty-state">
               <span>No active decision is open right now.</span>
-              <Link to="/creators" className="landing-text-link">Open the next vote</Link>
+              <Link to="/creators" className="landing-button landing-button-secondary">Open the next vote</Link>
             </div>
           )}
         </div>

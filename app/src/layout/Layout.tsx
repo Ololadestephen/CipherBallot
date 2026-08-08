@@ -1,7 +1,8 @@
-import { AlertTriangle, ChevronDown, Code2, ExternalLink, LogOut, MoreHorizontal, WalletCards, X } from "lucide-react";
+import { AlertTriangle, ChevronDown, Code2, ExternalLink, LogOut, Moon, MoreHorizontal, Sun, WalletCards, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { BOT_CHAIN, shortAddress, useEvmWallet } from "../lib/evm";
+import { useTheme } from "../lib/theme";
 
 const primaryLinks = [
   { to: "/voters", label: "Vote" },
@@ -23,6 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const moreRef = useRef<HTMLDivElement | null>(null);
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
   const wallet = useEvmWallet();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const isHome = location.pathname === "/";
   const moreActive = moreLinks.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`));
@@ -112,6 +114,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="nav-actions">
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            >
+              {theme === "dark" ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
+            </button>
             {wallet.connected && wallet.chainId !== BOT_CHAIN.chainId ? (
               <button
                 className="shell-wallet-button"
