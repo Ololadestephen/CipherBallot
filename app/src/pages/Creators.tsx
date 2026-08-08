@@ -159,6 +159,14 @@ export default function Creators() {
 
   const onSubmit = async (data: FormValues) => {
     if (!wallet.connected) return setMessage("Connect wallet first");
+    if (data.privacyMode === "threshold" && electionPrivateKey && !recoveryKitDownloaded) {
+      setStatus("error");
+      return setMessage("Download and store the recovery kit offline before creating this proposal.");
+    }
+    if (data.privacyMode === "threshold" && !data.keyCustodyConfirmed) {
+      setStatus("error");
+      return setMessage("Confirm key custody before creating a secret-sealed proposal.");
+    }
 
     const activeOptions = data.options.map((opt) => opt.value.trim()).filter(Boolean);
     if (activeOptions.length < 2 || activeOptions.length > 8) return setMessage("Use 2 to 8 voting options.");
@@ -373,13 +381,52 @@ export default function Creators() {
                       <p className="external-key-note">Advanced custody: you may paste a public key generated outside CipherBallot. You must control its matching private key.</p>
                     )}
 
+                    <div className="key-custody-danger" role="region" aria-label="Election key custody checklist">
+                      <div className="key-custody-danger-header">
+                        <strong>Danger zone: key custody</strong>
+                        <p>Anyone with the election private key can decrypt ballots for this proposal. CipherBallot never stores it for you.</p>
+                      </div>
+                      <ul className="key-custody-checklist">
+                        <li className={electionPrivateKey ? (recoveryKitDownloaded ? "done" : "pending") : "optional"}>
+                          <span>{electionPrivateKey ? (recoveryKitDownloaded ? "Done" : "Required") : "N/A"}</span>
+                          Download the recovery kit to offline storage before publishing.
+                        </li>
+                        <li className="required">
+                          <span>Required</span>
+                          Keep the private key off GitHub, Vercel env vars, chat apps, and public drives.
+                        </li>
+                        <li className="required">
+                          <span>Required</span>
+                          Share the private key only with committee operators after voting closes, never with voters or agents.
+                        </li>
+                        <li className="required">
+                          <span>Required</span>
+                          Losing the kit permanently blocks decryption and final tallying for this proposal.
+                        </li>
+                      </ul>
+                      {electionPrivateKey && !recoveryKitDownloaded && (
+                        <p className="key-custody-block">Download the recovery kit before you can continue past this step.</p>
+                      )}
+                    </div>
+
                     <label className={`key-custody-confirmation ${errors.keyCustodyConfirmed ? "has-error" : ""}`}>
                       <input type="checkbox" {...register("keyCustodyConfirmed", { validate: (value) => {
                         if (watchPrivacyMode !== "threshold") return true;
                         if (electionPrivateKey && !recoveryKitDownloaded) return "Download the recovery kit before continuing";
-                        return value || (electionPrivateKey ? "Confirm that the recovery kit is stored safely" : "Confirm that you control the matching private key");
-                      } })} />
-                      <span><strong>{electionPrivateKey ? "I downloaded and safely stored the recovery kit" : "I control the matching election private key"}</strong><small>{electionPrivateKey ? "Losing it makes encrypted ballots impossible to tally." : "CipherBallot cannot recover an externally managed private key."}</small></span>
+                        return value || (electionPrivateKey ? "Confirm that the recovery kit is stored offline and not uploaded anywhere public" : "Confirm that you control the matching private key");
+                      } })} disabled={Boolean(electionPrivateKey && !recoveryKitDownloaded)} />
+                      <span>
+                        <strong>
+                          {electionPrivateKey
+                            ? "I downloaded the recovery kit and stored it offline"
+                            : "I control the matching election private key"}
+                        </strong>
+                        <small>
+                          {electionPrivateKey
+                            ? "I will not upload the private key to CipherBallot, GitHub, Vercel, chat, or any public drive. Losing it makes encrypted ballots impossible to tally."
+                            : "CipherBallot cannot recover an externally managed private key."}
+                        </small>
+                      </span>
                     </label>
                     <ErrorMsg msg={errors.keyCustodyConfirmed?.message} />
                   </div>
@@ -409,9 +456,25 @@ export default function Creators() {
           <div className="creator-form-actions">
             <button type="button" className="button-ghost icon-command" disabled={activeStep === 0} onClick={() => setActiveStep((step) => Math.max(0, step - 1))}><ChevronLeft size={16} /> Back</button>
             {activeStep < creatorSteps.length - 1 ? (
-              <button type="button" className="cta icon-command" onClick={() => void advanceStep()}>Continue <ChevronRight size={16} /></button>
+              <button
+                type="button"
+                className="cta icon-command"
+                onClick={() => void advanceStep()}
+                disabled={activeStep === 2 && watchPrivacyMode === "threshold" && Boolean(electionPrivateKey) && !recoveryKitDownloaded}
+              >
+                Continue <ChevronRight size={16} />
+              </button>
             ) : (
-              <button type="submit" className="cta" disabled={status === "sending"}>{status === "sending" ? "Creating..." : "Create proposal"}</button>
+              <button
+                type="submit"
+                className="cta"
+                disabled={
+                  status === "sending"
+                  || (watchPrivacyMode === "threshold" && Boolean(electionPrivateKey) && !recoveryKitDownloaded)
+                }
+              >
+                {status === "sending" ? "Creating..." : "Create proposal"}
+              </button>
             )}
           </div>
 

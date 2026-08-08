@@ -11,45 +11,6 @@ import Proof from "./pages/Proof";
 import NotFound from "./pages/NotFound";
 import Agents from "./pages/Agents";
 
-const proposals = [
-  {
-    id: "#001",
-    title: "Treasury Allocation Q2",
-    status: "Active",
-    endsIn: "2d 4h",
-    votesCast: 128
-  },
-  {
-    id: "#002",
-    title: "Research Grant Program",
-    status: "Upcoming",
-    endsIn: "Starts in 6h",
-    votesCast: 0
-  },
-  {
-    id: "#003",
-    title: "Validator Set Expansion",
-    status: "Ended",
-    endsIn: "Finalized",
-    votesCast: 342
-  }
-];
-
-const features = [
-  {
-    title: "Hidden vote commitments",
-    detail: "Votes are committed as hashes during the active window, so interim option totals stay private."
-  },
-  {
-    title: "Verifiable final tally",
-    detail: "After the deadline, voters reveal their choices and the contract verifies every reveal."
-  },
-  {
-    title: "Live participation metrics",
-    detail: "Track total commitments without exposing live voting signals."
-  }
-];
-
 export default function App() {
   return (
     <Layout>

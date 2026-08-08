@@ -1,12 +1,15 @@
-import { AlertTriangle, ChevronDown, Code2, ExternalLink, LogOut, WalletCards, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertTriangle, ChevronDown, Code2, ExternalLink, LogOut, MoreHorizontal, WalletCards, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { BOT_CHAIN, shortAddress, useEvmWallet } from "../lib/evm";
 
-const appLinks = [
-  { to: "/voters", label: "Voters" },
-  { to: "/creators", label: "Creators" },
-  { to: "/agents", label: "Agents" },
+const primaryLinks = [
+  { to: "/voters", label: "Vote" },
+  { to: "/creators", label: "Create" },
+  { to: "/agents", label: "Agents" }
+];
+
+const moreLinks = [
   { to: "/results", label: "Results" },
   { to: "/proof", label: "Proof" },
   { to: "/docs", label: "Docs" }
@@ -16,9 +19,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showDisconnect, setShowDisconnect] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const moreRef = useRef<HTMLDivElement | null>(null);
+  const moreButtonRef = useRef<HTMLButtonElement | null>(null);
   const wallet = useEvmWallet();
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const moreActive = moreLinks.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,9 +40,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setShowDisconnect(false);
+    setShowMore(false);
     setIsVisible(true);
     window.scrollTo({ top: 0, left: 0 });
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!showMore) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
+        setShowMore(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowMore(false);
+        moreButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showMore]);
 
   return (
     <div className={`app-shell ${isHome ? "home-route" : "app-route"}`}>
@@ -49,9 +78,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <nav className="nav-pill" aria-label="Primary navigation">
-            {appLinks.map((item) => (
+            {primaryLinks.map((item) => (
               <NavLink key={item.to} to={item.to}>{item.label}</NavLink>
             ))}
+            <div className="nav-more" ref={moreRef}>
+              <button
+                type="button"
+                ref={moreButtonRef}
+                className={`nav-more-trigger ${moreActive ? "active" : ""}`}
+                aria-expanded={showMore}
+                aria-haspopup="menu"
+                aria-controls="more-navigation-menu"
+                onClick={() => setShowMore((open) => !open)}
+              >
+                <MoreHorizontal size={15} aria-hidden="true" />
+                <span>More</span>
+                <ChevronDown size={13} aria-hidden="true" />
+              </button>
+              {showMore && (
+                <div id="more-navigation-menu" className="nav-more-menu">
+                  {moreLinks.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setShowMore(false)}
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="nav-actions">

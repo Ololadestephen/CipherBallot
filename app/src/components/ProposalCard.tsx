@@ -1,5 +1,6 @@
-import { Check, ChevronDown, Clock3, Copy, ShieldCheck, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Bot, Check, ChevronDown, Clock3, Copy, ShieldCheck, Users } from "lucide-react";
+import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   ALREADY_VOTED_MESSAGE,
   BOT_CHAIN,
@@ -35,11 +36,18 @@ export function ProposalCard({
   const [alreadyVoted, setAlreadyVoted] = useState(false);
   const [checkingVote, setCheckingVote] = useState(false);
   const [copiedBrief, setCopiedBrief] = useState(false);
+  const [activePanel, setActivePanel] = useState<"vote" | "agent">("vote");
 
   const pendingReveal = useMemo(
     () => getPendingReveals(wallet.account).find((item) => item.proposalId === proposal.id),
     [wallet.account, proposal.id, status]
   );
+
+  const showAgentPanel = proposal.privacyMode === "SecretSealed" && proposal.status === "Active";
+  const voteTabId = `proposal-${proposal.id}-vote-tab`;
+  const votePanelId = `proposal-${proposal.id}-vote-panel`;
+  const agentTabId = `proposal-${proposal.id}-agent-tab`;
+  const agentPanelId = `proposal-${proposal.id}-agent-panel`;
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +74,26 @@ export function ProposalCard({
       cancelled = true;
     };
   }, [proposal.id, proposal.privacyMode, wallet.account, wallet.connected]);
+
+  useEffect(() => {
+    if (!showAgentPanel && activePanel === "agent") setActivePanel("vote");
+  }, [showAgentPanel, activePanel]);
+
+  const handlePanelTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextPanel = event.key === "Home"
+      ? "vote"
+      : event.key === "End"
+        ? "agent"
+        : activePanel === "vote"
+          ? "agent"
+          : "vote";
+    setActivePanel(nextPanel);
+    window.requestAnimationFrame(() => {
+      document.getElementById(nextPanel === "vote" ? voteTabId : agentTabId)?.focus();
+    });
+  };
 
   const handleVote = async () => {
     if (!wallet.connected) return setMessage("Connect wallet first");
@@ -175,6 +203,9 @@ export function ProposalCard({
         <div className="proposal-card-topline">
           <span className={`pill status-${proposal.status.toLowerCase()}`}>{proposal.status}</span>
           <span className="proposal-number">Proposal #{proposal.id}</span>
+          {proposal.privacyMode === "SecretSealed" && (
+            <span className="proposal-mode-chip">Sealed</span>
+          )}
           <ChevronDown className="proposal-chevron" size={17} />
         </div>
         <h2>{proposal.title}</h2>
@@ -193,9 +224,41 @@ export function ProposalCard({
       </div>
 
       <div className="proposal-card-content">
+        {showAgentPanel && (
+          <div className="proposal-panel-tabs" role="tablist" aria-label="Ballot actions">
+            <button
+              type="button"
+              id={voteTabId}
+              role="tab"
+              aria-selected={activePanel === "vote"}
+              aria-controls={votePanelId}
+              tabIndex={activePanel === "vote" ? 0 : -1}
+              className={activePanel === "vote" ? "active" : ""}
+              onClick={() => setActivePanel("vote")}
+              onKeyDown={handlePanelTabKeyDown}
+            >
+              Your ballot
+            </button>
+            <button
+              type="button"
+              id={agentTabId}
+              role="tab"
+              aria-selected={activePanel === "agent"}
+              aria-controls={agentPanelId}
+              tabIndex={activePanel === "agent" ? 0 : -1}
+              className={activePanel === "agent" ? "active" : ""}
+              onClick={() => setActivePanel("agent")}
+              onKeyDown={handlePanelTabKeyDown}
+            >
+              <Bot size={14} aria-hidden="true" /> Agent path
+            </button>
+          </div>
+        )}
+
         <div className="option-list-vote" role="group" aria-label="Ballot options">
           {proposal.options.map((option, index) => (
             <button
+              type="button"
               key={option}
               className={`option-tile ${optionIndex === index ? "selected" : ""}`}
               onClick={() => setOptionIndex(index)}
@@ -207,47 +270,62 @@ export function ProposalCard({
           ))}
         </div>
 
-        {proposal.status === "Active" && (
-          <button className="cta full-width" onClick={handleVote} disabled={checkingVote || alreadyVoted || status === "sending" || (proposal.privacyMode === "CommitReveal" && Boolean(pendingReveal))}>
-            {checkingVote
-              ? "Checking vote status..."
-              : alreadyVoted
-                ? proposal.privacyMode === "SecretSealed" ? "Private ballot submitted" : "Hidden vote committed"
-                : proposal.privacyMode === "SecretSealed"
-                  ? status === "sending" ? "Submitting..." : "Submit private ballot"
-                  : pendingReveal ? "Hidden vote committed" : status === "sending" ? "Submitting..." : "Commit hidden vote"}
-          </button>
-        )}
+        {(!showAgentPanel || activePanel === "vote") && (
+          <div
+            id={votePanelId}
+            className="proposal-vote-panel"
+            role={showAgentPanel ? "tabpanel" : undefined}
+            aria-labelledby={showAgentPanel ? voteTabId : undefined}
+          >
+            {proposal.status === "Active" && (
+              <button className="cta full-width" onClick={handleVote} disabled={checkingVote || alreadyVoted || status === "sending" || (proposal.privacyMode === "CommitReveal" && Boolean(pendingReveal))}>
+                {checkingVote
+                  ? "Checking vote status..."
+                  : alreadyVoted
+                    ? proposal.privacyMode === "SecretSealed" ? "Private ballot submitted" : "Hidden vote committed"
+                    : proposal.privacyMode === "SecretSealed"
+                      ? status === "sending" ? "Submitting..." : "Submit private ballot"
+                      : pendingReveal ? "Hidden vote committed" : status === "sending" ? "Submitting..." : "Commit hidden vote"}
+              </button>
+            )}
 
-        {proposal.privacyMode === "SecretSealed" && proposal.status === "Active" && (
-          <div className="agent-ballot-actions">
-            <button className="button-ghost icon-command" type="button" onClick={copyForAgent}>
-              {copiedBrief ? <Check size={15} /> : <Copy size={15} />} {copiedBrief ? "Copied" : "Copy for agent"}
-            </button>
-            <button className="button-ghost icon-command" type="button" onClick={signForAgent} disabled={alreadyVoted || status === "sending" || optionIndex === null}>
-              <ShieldCheck size={15} /> Sign one-time agent vote
-            </button>
+            {proposal.privacyMode === "CommitReveal" && proposal.status === "Reveal" && (
+              <button className="cta full-width" onClick={handleReveal} disabled={status === "sending" || !pendingReveal}>
+                {pendingReveal ? "Reveal my vote" : "No local reveal secret"}
+              </button>
+            )}
+
+            {proposal.privacyMode === "SecretSealed" && proposal.status === "Tallying" && (
+              <div className="inline-state-panel gold">
+                <strong>Committee tally window</strong>
+                <span>{proposal.tallyApprovalCount} of {proposal.threshold} approvals are on-chain.</span>
+              </div>
+            )}
+
+            {proposal.status === "Finalized" && (
+              <div className="compact-results">
+                {proposal.options.map((option, index) => (
+                  <div key={option}><span>{option}</span><strong>{proposal.finalTally[index] || 0}</strong></div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {proposal.privacyMode === "CommitReveal" && proposal.status === "Reveal" && (
-          <button className="cta full-width" onClick={handleReveal} disabled={status === "sending" || !pendingReveal}>
-            {pendingReveal ? "Reveal my vote" : "No local reveal secret"}
-          </button>
-        )}
-
-        {proposal.privacyMode === "SecretSealed" && proposal.status === "Tallying" && (
-          <div className="inline-state-panel gold">
-            <strong>Committee tally window</strong>
-            <span>{proposal.tallyApprovalCount} of {proposal.threshold} approvals are on-chain.</span>
-          </div>
-        )}
-
-        {proposal.status === "Finalized" && (
-          <div className="compact-results">
-            {proposal.options.map((option, index) => (
-              <div key={option}><span>{option}</span><strong>{proposal.finalTally[index] || 0}</strong></div>
-            ))}
+        {showAgentPanel && activePanel === "agent" && (
+          <div id={agentPanelId} className="proposal-agent-panel" role="tabpanel" aria-labelledby={agentTabId}>
+            <p className="proposal-agent-copy">
+              Hand this proposal to an agent without sharing your private key. Select an option first for a one-time signed relay.
+            </p>
+            <div className="agent-ballot-actions">
+              <button className="button-ghost icon-command" type="button" onClick={copyForAgent}>
+                {copiedBrief ? <Check size={15} /> : <Copy size={15} />} {copiedBrief ? "Copied" : "Copy for agent"}
+              </button>
+              <button className="cta icon-command" type="button" onClick={signForAgent} disabled={alreadyVoted || status === "sending" || optionIndex === null}>
+                <ShieldCheck size={15} /> Sign one-time agent vote
+              </button>
+            </div>
+            <Link className="proposal-agent-link" to="/agents">Manage scoped agent access</Link>
           </div>
         )}
 

@@ -1878,7 +1878,7 @@ textarea::placeholder {
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: 18px;
-    overflow-x: auto;
+    overflow: visible;
     padding: 9px 0 2px;
     border: 0;
     border-top: 1px solid var(--stroke);
@@ -2771,7 +2771,7 @@ select.input:focus {
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: 8px;
-    overflow-x: auto;
+    overflow: visible;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     scrollbar-width: none;
   }
@@ -4397,5 +4397,275 @@ select.input:focus {
 
   .proof-lifecycle-grid span:nth-child(4) {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* --- App UX polish (polish-and-rebrand branch) --- */
+
+.nav-more {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-more-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 11px 20px;
+  border: 0;
+  background: transparent;
+  color: #858d89;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nav-more-trigger:hover,
+.nav-more-trigger.active {
+  color: #f4f6f5;
+}
+
+.nav-more-trigger.active::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: -1px;
+  left: 10px;
+  height: 2px;
+  background: #4f7cff;
+}
+
+.nav-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 156px;
+  display: grid;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: #101212;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.nav-more-menu a {
+  padding: 10px 12px !important;
+  border-radius: 7px;
+  color: #c5cbc8 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.nav-more-menu a::after {
+  display: none !important;
+}
+
+.nav-more-menu a:hover,
+.nav-more-menu a.active {
+  background: rgba(79, 124, 255, 0.12);
+  color: #fff !important;
+}
+
+.proposal-mode-chip {
+  padding: 2px 8px;
+  border: 1px solid rgba(54, 211, 153, 0.35);
+  border-radius: 999px;
+  background: rgba(54, 211, 153, 0.1);
+  color: #7fe7bc;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.proposal-panel-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.proposal-panel-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #8d9591;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.proposal-panel-tabs button:hover {
+  color: #e8ebe9;
+}
+
+.proposal-panel-tabs button.active {
+  background: rgba(79, 124, 255, 0.16);
+  color: #f4f6f5;
+}
+
+.proposal-vote-panel > .cta,
+.proposal-agent-panel .cta {
+  margin-top: 14px;
+}
+
+.proposal-agent-panel {
+  margin-top: 4px;
+}
+
+.proposal-agent-copy {
+  margin: 0;
+  color: #8f9793;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.proposal-agent-link {
+  display: inline-flex;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #7ea2ff;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.proposal-agent-link:hover {
+  color: #a9beff;
+}
+
+.agent-ballot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.agent-ballot-actions .button-ghost,
+.agent-ballot-actions .cta {
+  min-height: 42px;
+  flex: 1 1 160px;
+}
+
+.key-custody-danger {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 92, 92, 0.35);
+  border-radius: 8px;
+  background: rgba(255, 92, 92, 0.06);
+}
+
+.key-custody-danger-header strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #ff9b9b;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.key-custody-danger-header p {
+  margin: 0 0 12px;
+  color: #b7aaa9;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.key-custody-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.key-custody-checklist li {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: #c7bebd;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.key-custody-checklist li > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #d7cfce;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.key-custody-checklist li.done > span {
+  background: rgba(54, 211, 153, 0.16);
+  color: #7fe7bc;
+}
+
+.key-custody-checklist li.pending > span {
+  background: rgba(255, 92, 92, 0.16);
+  color: #ff9b9b;
+}
+
+.key-custody-block {
+  margin: 12px 0 0;
+  color: #ff9b9b;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.key-custody-confirmation input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.key-custody-confirmation:has(input:disabled) {
+  opacity: 0.72;
+}
+
+@media (max-width: 720px) {
+  .nav-more-menu {
+    right: 0;
+    left: auto;
+  }
+
+  .key-custody-checklist li {
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-pill {
+    gap: 0;
+  }
+
+  .nav-pill a,
+  .nav-more-trigger {
+    padding-right: 8px;
+    padding-left: 8px;
+    font-size: 12px;
   }
 }
