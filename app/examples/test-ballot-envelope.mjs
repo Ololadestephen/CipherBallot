@@ -5,6 +5,7 @@ import {
   dataSlice,
   getBytes,
   hexlify,
+  isHexString,
   keccak256,
   randomBytes,
   toUtf8Bytes
@@ -18,6 +19,8 @@ import {
 } from "./lib/ballot-envelope.mjs";
 
 const keyPair = generateElectionKeyPair();
+assert.equal(isHexString(keyPair.privateKey, 32), true);
+assert.equal(isHexString(keyPair.publicKey, 65), true);
 const context = {
   optionIndex: 1,
   proposalId: 42,

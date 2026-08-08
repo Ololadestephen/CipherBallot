@@ -15,12 +15,20 @@ export const BALLOT_ENVELOPE_VERSION = "cipherballot-ecdh-aesgcm-v1";
 export const MAX_BALLOT_ENVELOPE_BYTES = 4096;
 
 export function generateElectionKeyPair() {
-  const ecdh = createECDH("secp256k1");
-  ecdh.generateKeys();
-  return {
-    privateKey: hexlify(ecdh.getPrivateKey()),
-    publicKey: hexlify(ecdh.getPublicKey(undefined, "uncompressed"))
-  };
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const ecdh = createECDH("secp256k1");
+    const privateKey = randomBytes(32);
+    try {
+      ecdh.setPrivateKey(privateKey);
+      return {
+        privateKey: hexlify(privateKey),
+        publicKey: hexlify(ecdh.getPublicKey(undefined, "uncompressed"))
+      };
+    } catch {
+      // Retry the vanishingly unlikely invalid secp256k1 scalar.
+    }
+  }
+  throw new Error("Unable to generate a valid election key.");
 }
 
 export function publicKeyFromPrivateKey(privateKey) {
