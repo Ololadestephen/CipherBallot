@@ -1725,18 +1725,6 @@ textarea::placeholder {
   line-height: 1.6;
 }
 
-.landing-protocol-note {
-  width: 61%;
-  margin: 24px 0 0;
-  color: #74777e;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.landing-protocol-note strong {
-  color: #cfd0d4;
-}
-
 .landing-proof-band {
   background: #090907;
 }
@@ -1856,8 +1844,7 @@ textarea::placeholder {
   }
 
   .landing-privacy-heading,
-  .landing-privacy-points,
-  .landing-protocol-note {
+  .landing-privacy-points {
     width: 61%;
   }
 
@@ -2053,8 +2040,7 @@ textarea::placeholder {
   }
 
   .landing-privacy-heading,
-  .landing-privacy-points,
-  .landing-protocol-note {
+  .landing-privacy-points {
     width: 100%;
   }
 
@@ -5246,7 +5232,6 @@ select.input,
 :root[data-theme="light"] .landing-lead,
 :root[data-theme="light"] .landing-flow-list p,
 :root[data-theme="light"] .landing-privacy-points p,
-:root[data-theme="light"] .landing-protocol-note,
 :root[data-theme="light"] .landing-contract-facts dt,
 :root[data-theme="light"] .landing-final-cta > .landing-container > p:not(.landing-eyebrow),
 :root[data-theme="light"] .landing-loading,
@@ -5255,7 +5240,6 @@ select.input,
 }
 
 :root[data-theme="light"] .landing-flow-list strong,
-:root[data-theme="light"] .landing-protocol-note strong,
 :root[data-theme="light"] .landing-contract-facts dd {
   color: var(--text-primary);
 }

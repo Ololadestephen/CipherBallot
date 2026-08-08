@@ -177,10 +177,6 @@ export default function Home() {
               </article>
             ))}
           </div>
-
-          <p className="landing-protocol-note">
-            <strong>Current V2 boundary:</strong> election keys are committee-custodied, with threshold tally approval enforced by the contract.
-          </p>
         </div>
       </section>
 
