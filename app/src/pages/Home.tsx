@@ -116,7 +116,7 @@ export default function Home() {
           ) : (
             <div className="landing-empty-state">
               <span>No active decision is open right now.</span>
-              <Link to="/creators" className="landing-text-link">Open the next vote</Link>
+              <Link to="/creators" className="landing-button landing-button-secondary">Open the next vote</Link>
             </div>
           )}
         </div>
@@ -177,10 +177,6 @@ export default function Home() {
               </article>
             ))}
           </div>
-
-          <p className="landing-protocol-note">
-            <strong>Current V2 boundary:</strong> election keys are committee-custodied, with threshold tally approval enforced by the contract.
-          </p>
         </div>
       </section>
 
