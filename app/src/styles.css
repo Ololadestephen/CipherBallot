@@ -2076,6 +2076,13 @@ textarea::placeholder {
   max-width: none;
 }
 
+.docs-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .docs-layout {
   display: grid;
   grid-template-columns: 190px minmax(0, 760px) 150px;
@@ -2088,6 +2095,11 @@ textarea::placeholder {
 .docs-toc {
   position: sticky;
   top: 92px;
+  max-height: calc(100vh - 112px);
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-width: thin;
 }
 
 .docs-sidebar > div {
@@ -2182,6 +2194,10 @@ textarea::placeholder {
   line-height: 1.8;
 }
 
+.docs-article li strong {
+  color: #dfe3e1;
+}
+
 .docs-article p {
   margin: 0 0 16px;
 }
@@ -2201,6 +2217,18 @@ textarea::placeholder {
   color: #aabaff;
   font-family: monospace;
   font-size: 0.9em;
+}
+
+.docs-inline-link {
+  color: #8da9ff;
+  text-decoration: underline;
+  text-decoration-color: rgba(141, 169, 255, 0.45);
+  text-underline-offset: 3px;
+}
+
+.docs-inline-link:hover {
+  color: #b8c8ff;
+  text-decoration-color: currentColor;
 }
 
 .docs-code-block {
@@ -2265,6 +2293,24 @@ textarea::placeholder {
 .docs-callout strong,
 .docs-callout code {
   display: block;
+}
+
+.docs-callout p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.docs-callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.docs-callout-actions .button-ghost {
+  min-height: 36px;
+  padding: 7px 11px;
+  font-size: 11px;
 }
 
 .docs-callout strong,
@@ -2376,9 +2422,12 @@ textarea::placeholder {
 
   .docs-sidebar {
     position: static;
+    max-height: none;
     display: flex;
     gap: 8px;
     overflow-x: auto;
+    overflow-y: hidden;
+    padding-right: 0;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
@@ -2404,6 +2453,10 @@ textarea::placeholder {
 
   .docs-article h2 {
     font-size: 26px;
+  }
+
+  .docs-header-actions {
+    justify-content: flex-start;
   }
 
   .docs-data-table > div,
@@ -5080,7 +5133,8 @@ select.input,
 :root[data-theme="light"] .result-row-outcome strong,
 :root[data-theme="light"] .result-evidence-block strong,
 :root[data-theme="light"] .proof-ledger dd,
-:root[data-theme="light"] .proof-lifecycle-grid .finalized strong {
+:root[data-theme="light"] .proof-lifecycle-grid .finalized strong,
+:root[data-theme="light"] .docs-warning strong {
   color: #7b5900;
 }
 
@@ -5150,6 +5204,7 @@ select.input,
 :root[data-theme="light"] .docs-toc a:hover,
 :root[data-theme="light"] .docs-article h2,
 :root[data-theme="light"] .docs-article h3,
+:root[data-theme="light"] .docs-article li strong,
 :root[data-theme="light"] .docs-data-table strong,
 :root[data-theme="light"] .docs-endpoints strong {
   color: var(--text-primary);
