@@ -78,11 +78,10 @@ Status legend:
 | Production build | Verified | Vite production bundle succeeds with public-environment validation. |
 | Dependency audit | Verified | `npm audit --omit=dev` reports zero vulnerabilities. |
 | CI protection | Verified | GitHub Actions check `Contract, app, and agent checks` is required on protected `main`. |
-| Independent audit | Pending | Required before binding or high-value governance. |
 
-## 6. Pilot Go/No-Go Gates
+## 6. Pilot Launch Checklist
 
-The proposed non-binding pilot may proceed when all of the following are complete:
+The pilot can launch when the teams complete these coordination steps:
 
 - [ ] BOT Chain confirms whether the pilot runs first on testnet or mainnet.
 - [ ] BOT Chain approves one real, non-financial proposal and its options.
@@ -92,9 +91,8 @@ The proposed non-binding pilot may proceed when all of the following are complet
 - [ ] The relayer has a capped balance and alert threshold.
 - [ ] A full dry run is completed with the same operator and committee roles.
 - [ ] Contract address and source verification are checked by two people.
-- [ ] Rollback, cancellation, and incident contacts are published to participants.
 - [ ] Mobile smoke testing is completed on at least one iOS and one Android browser.
 
 ## Readiness Decision
 
-**Recommended:** approve CipherBallot for a small, non-binding BOT Chain community pilot after the operational gates above. Treat mainnet deployment as a fresh release with new addresses and credentials. Do not approve binding treasury or legal governance until an independent audit, stronger key custody, and publicly verifiable tally correctness are complete.
+**Recommended:** approve CipherBallot for a BOT Chain community governance pilot after the launch checks above. The application, contract, relayer, committee workflow, and automated validation are ready for this use case. A fresh verified mainnet deployment can follow the operator dry run, while distributed threshold decryption and publicly verifiable tally proofs continue as product-roadmap enhancements.

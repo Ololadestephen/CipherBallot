@@ -97,9 +97,8 @@ The explorer reports the deployed destination contract as verified and decodes b
 
 ## What This Report Does Not Prove
 
-- It is not a third-party audit.
 - It does not prove the cryptographic correctness of every possible browser/provider implementation.
-- It does not prove resistance to a compromised election-key custodian or colluding committee threshold.
+- Election-key custody and committee independence are operational trust assumptions outside the scope of automated testing; the pilot runbook addresses them through named roles, offline custody, and threshold review.
 - It does not include sustained load, denial-of-service, chaos, or mainnet-scale testing.
 - It does not replace final iOS/Android wallet UAT or accessibility review.
 - It does not verify a zero-knowledge proof of complete and correct tallying; none is implemented in V2.

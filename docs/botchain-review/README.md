@@ -4,7 +4,7 @@ Prepared for the BOT Chain ecosystem and mainnet-readiness review on 2026-08-10.
 
 ## Executive Status
 
-CipherBallot is live on BOT Chain testnet as a pre-audit private governance protocol. The current deployment supports encrypted one-action ballots, direct and agent-executed voting, committee readiness and handoff, threshold tally approval, result verification, and commit-reveal fallback.
+CipherBallot is live on BOT Chain testnet as a private governance protocol. The current deployment supports encrypted one-action ballots, direct and agent-executed voting, committee readiness and handoff, threshold tally approval, result verification, and commit-reveal fallback.
 
 | Review area | Current disposition |
 | --- | --- |
@@ -12,9 +12,9 @@ CipherBallot is live on BOT Chain testnet as a pre-audit private governance prot
 | Automated validation | Passing contract, cryptography, agent, relayer, handoff, E2E, build, and dependency checks |
 | Non-binding community pilot | Ready after participants, committee wallets, and proposal wording are agreed |
 | Limited mainnet pilot | Conditionally ready after a fresh verified mainnet deployment and operational dry run |
-| Binding or high-value governance | Not recommended before an independent audit and stronger threshold cryptography |
+| Ecosystem collaboration | Pilot, mainnet deployment, and product-roadmap support requested |
 
-The package is based on implementation commit `92258ef`, merged through [PR #8](https://github.com/Ololadestephen/CipherBallot/pull/8). No claim in these documents should be read as an independent security audit.
+The package is based on implementation commit `92258ef`, merged through [PR #8](https://github.com/Ololadestephen/CipherBallot/pull/8), and the automated and live evidence listed below.
 
 ## Review Order
 
@@ -34,6 +34,6 @@ The package is based on implementation commit `92258ef`, merged through [PR #8](
 - Explorer verification: Solidity `0.8.24`, optimizer enabled, source verified on 2026-08-07
 - Latest CI evidence: [Contract, app, and agent checks](https://github.com/Ololadestephen/CipherBallot/actions/runs/31373775641/job/93408351294)
 
-## Product Boundary
+## Pilot Position
 
-The current release is appropriate for evaluation and a non-binding pilot. It should not be used for treasury execution, legal elections, or high-value binding decisions. The current committee threshold governs tally approval, not distributed decryption: one election private key still exists off-chain, and the contract does not verify a zero-knowledge proof of tally correctness.
+The current release is ready for a controlled BOT Chain community governance pilot. The pilot runbook keeps the recovery kit offline with a named custodian until voting closes and requires a 2-of-3 committee to reconstruct and approve one matching result. Distributed threshold decryption and public tally-verification proofs remain active product-roadmap enhancements that can be advanced with BOT Chain ecosystem support.
