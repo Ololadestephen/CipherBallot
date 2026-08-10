@@ -59,6 +59,10 @@ jobs:
         working-directory: app
         run: npm run test:tally-transcript
 
+      - name: Test encrypted committee handoff
+        working-directory: app
+        run: npm run test:committee-handoff
+
       - name: Run local agent-relayer E2E
         working-directory: app
         run: npm run test:e2e
