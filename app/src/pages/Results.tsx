@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, FileCheck2, ShieldCheck, Upload } from "lucide-react";
+import { ArrowLeft, CircleCheckBig, Download, FileCheck2, ShieldCheck, Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -20,6 +20,7 @@ import {
 import { ResultCard } from "../components/ResultCard";
 import { PageHeader } from "../components/PageHeader";
 import { committeePortalPath, proposalCode } from "../lib/proposalCode";
+import { getFinalResult } from "../lib/resultOutcome";
 
 export default function Results() {
   const wallet = useEvmWallet();
@@ -87,6 +88,7 @@ export default function Results() {
   }, [selectedId]);
 
   const totalVotes = useMemo(() => selected?.finalTally.reduce((sum, item) => sum + item, 0) ?? 0, [selected]);
+  const finalResult = useMemo(() => selected ? getFinalResult(selected) : null, [selected]);
   const isSelectedCommitteeMember = Boolean(
     selected && committeeStatus.proposalId === selected.id && committeeStatus.isMember
   );
@@ -229,6 +231,23 @@ export default function Results() {
               </span>
             </div>
           </div>
+
+          {finalResult && (
+            <div className="final-result-summary" role="status" aria-label={`Final result: ${finalResult.label}`}>
+              <CircleCheckBig size={28} aria-hidden="true" />
+              <div>
+                <span>Final result</span>
+                <strong>{finalResult.label}</strong>
+                <p>
+                  {finalResult.kind === "no-votes"
+                    ? "The proposal finalized without any counted votes."
+                    : finalResult.kind === "tie"
+                      ? `${finalResult.winningOptions.length} options finished level with ${finalResult.voteCount} vote${finalResult.voteCount === 1 ? "" : "s"} each.`
+                      : `${finalResult.voteCount} of ${totalVotes} counted votes (${((finalResult.voteCount / totalVotes) * 100).toFixed(1)}%).`}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="results-chart-section">
             {selected.finalized ? (
