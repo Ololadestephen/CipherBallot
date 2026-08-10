@@ -7,11 +7,11 @@ import { useTheme } from "../lib/theme";
 const primaryLinks = [
   { to: "/voters", label: "Vote" },
   { to: "/creators", label: "Create" },
-  { to: "/agents", label: "Agents" }
+  { to: "/agents", label: "Agents" },
+  { to: "/results", label: "Results" }
 ];
 
 const moreLinks = [
-  { to: "/results", label: "Results" },
   { to: "/proof", label: "Proof" },
   { to: "/docs", label: "Docs" }
 ];

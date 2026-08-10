@@ -2,11 +2,10 @@ import { ChevronRight, Clock3, ShieldCheck, Vote } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { ProposalView } from "../lib/evm";
 import { proposalCode } from "../lib/proposalCode";
+import { getFinalResult } from "../lib/resultOutcome";
 
 export function ResultCard({ proposal }: { proposal: ProposalView }) {
-  const total = proposal.finalTally.reduce((sum, item) => sum + item, 0);
-  const leadingIndex = proposal.finalTally.reduce((best, value, index, values) => value > (values[best] || 0) ? index : best, 0);
-  const leadingOption = proposal.finalized && total > 0 ? proposal.options[leadingIndex] : null;
+  const finalResult = getFinalResult(proposal);
   const isThreshold = proposal.privacyMode === "SecretSealed";
 
   return (
@@ -23,9 +22,9 @@ export function ResultCard({ proposal }: { proposal: ProposalView }) {
           <span><Clock3 size={13} /> {proposal.allowlistEnabled ? `${proposal.allowedVoterCount} eligible` : "Public"}</span>
         </div>
       </div>
-      <div className="result-row-outcome">
-        <span>{leadingOption ? "Leading outcome" : "Outcome"}</span>
-        <strong>{leadingOption || "Pending"}</strong>
+      <div className={`result-row-outcome ${finalResult ? "is-final" : ""}`}>
+        <span>{finalResult ? "Final result" : "Result status"}</span>
+        <strong>{finalResult?.label || "Awaiting finalization"}</strong>
       </div>
       <ChevronRight className="result-row-arrow" size={18} />
     </Link>
