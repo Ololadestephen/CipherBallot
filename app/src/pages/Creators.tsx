@@ -17,7 +17,8 @@ type FormValues = {
   options: { value: string }[];
   startsImmediately: boolean;
   scheduledStart: string;
-  durationDays: number;
+  durationValue: number;
+  durationUnit: "minutes" | "hours" | "days";
   privacyMode: "threshold" | "commitReveal";
   eligibility: "public" | "allowlist";
   allowlistRaw: string;
@@ -73,7 +74,8 @@ export default function Creators() {
       options: [{ value: "Yes" }, { value: "No" }, { value: "Abstain" }],
       startsImmediately: true,
       scheduledStart: toLocalDatetimeInputValue(new Date()),
-      durationDays: 3,
+      durationValue: 3,
+      durationUnit: "days",
       privacyMode: "threshold",
       eligibility: "public",
       allowlistRaw: "",
@@ -95,6 +97,7 @@ export default function Creators() {
   const watchPrivacyMode = watch("privacyMode");
   const watchEligibility = watch("eligibility");
   const watchCommitteeRaw = watch("committeeRaw");
+  const watchDurationUnit = watch("durationUnit");
 
   const generateKeys = () => {
     try {
@@ -178,10 +181,12 @@ export default function Creators() {
 
     const formStartsImmediately = data.startsImmediately === true || String(data.startsImmediately) === "true";
     const startDate = formStartsImmediately ? new Date() : new Date(data.scheduledStart);
-    const durationDays = Math.max(1, Number(data.durationDays));
+    const durationValue = Number(data.durationValue);
+    const durationMultipliers = { minutes: 60, hours: 60 * 60, days: 24 * 60 * 60 } as const;
+    const durationSeconds = durationValue * durationMultipliers[data.durationUnit];
     const startTs = Math.floor(startDate.getTime() / 1000);
-    const endTs = startTs + durationDays * 24 * 60 * 60;
-    if (!Number.isSafeInteger(startTs) || !Number.isSafeInteger(endTs) || endTs <= Math.floor(Date.now() / 1000)) {
+    const endTs = startTs + durationSeconds;
+    if (!Number.isSafeInteger(startTs) || !Number.isSafeInteger(endTs) || durationSeconds < 60 || endTs <= Math.floor(Date.now() / 1000)) {
       return setMessage("Choose a voting window that ends in the future.");
     }
     
@@ -273,7 +278,7 @@ export default function Creators() {
   const advanceStep = async () => {
     const fieldsByStep: Array<Array<keyof FormValues>> = [
       ["title", "options"],
-      isStartsImmediately ? ["durationDays"] : ["scheduledStart", "durationDays"],
+      isStartsImmediately ? ["durationValue", "durationUnit"] : ["scheduledStart", "durationValue", "durationUnit"],
       watchPrivacyMode === "threshold"
         ? ["privacyMode", "committeeRaw", "threshold", "encryptionPublicKey", "tallySecret", "keyCustodyConfirmed"]
         : ["privacyMode"],
@@ -339,7 +344,34 @@ export default function Creators() {
               {!isStartsImmediately && (
                 <label className="input-label">Scheduled start<input type="datetime-local" className="input" {...register("scheduledStart", { validate: (value) => isStartsImmediately || !!value || "Scheduled start is required" })} /><ErrorMsg msg={errors.scheduledStart?.message} /></label>
               )}
-              <label className="input-label">Duration in days<input className={`input ${errors.durationDays ? "input-error" : ""}`} type="number" min="1" max="3650" step="1" {...register("durationDays", { required: "Duration is required", min: { value: 1, message: "Duration must be at least 1 day" }, max: { value: 3650, message: "Duration cannot exceed 3650 days" } })} /><ErrorMsg msg={errors.durationDays?.message} /></label>
+              <label className="input-label">
+                Voting duration
+                <div className="duration-control">
+                  <input
+                    className={`input ${errors.durationValue ? "input-error" : ""}`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputMode="numeric"
+                    {...register("durationValue", {
+                      required: "Duration is required",
+                      validate: (value) => {
+                        const amount = Number(value);
+                        if (!Number.isSafeInteger(amount) || amount < 1) return "Enter a positive whole number";
+                        const multiplier = watchDurationUnit === "minutes" ? 60 : watchDurationUnit === "hours" ? 3600 : 86400;
+                        return amount * multiplier <= 3650 * 86400 || "Voting duration cannot exceed 10 years";
+                      }
+                    })}
+                  />
+                  <select className="input" aria-label="Voting duration unit" {...register("durationUnit")}>
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                  </select>
+                </div>
+                <small>Minimum duration is one minute.</small>
+                <ErrorMsg msg={errors.durationValue?.message} />
+              </label>
             </section>
           )}
 

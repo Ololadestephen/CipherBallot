@@ -9,10 +9,12 @@ const {
   acquireRelayLock,
   consumeRateLimit,
   createRelayJob,
+  getTallyTranscript,
   getRelayJob,
   isRelayJobId,
   releaseRelayLock,
   relayJobId,
+  saveTallyTranscript,
   saveRelayJob
 } = await import("../api/_lib/relay-store.js");
 
@@ -55,4 +57,10 @@ assert.equal(firstLimit.allowed, true);
 assert.equal(secondLimit.allowed, true);
 assert.equal(thirdLimit.allowed, false);
 
-console.log(JSON.stringify({ result: "passed", relayJobId: id, idempotent: true, distributedLock: true, rateLimit: true }, null, 2));
+const tallyHash = `0x${"55".repeat(32)}`;
+const tallyTranscript = JSON.stringify({ proposalId: 1, finalTally: [1, 0] });
+assert.equal(await saveTallyTranscript(tallyHash, tallyTranscript), tallyTranscript);
+assert.equal(await getTallyTranscript(tallyHash), tallyTranscript);
+assert.equal(await saveTallyTranscript(tallyHash, "different"), tallyTranscript);
+
+console.log(JSON.stringify({ result: "passed", relayJobId: id, idempotent: true, distributedLock: true, rateLimit: true, tallyStorage: true }, null, 2));

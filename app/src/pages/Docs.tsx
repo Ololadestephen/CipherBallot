@@ -309,27 +309,31 @@ npm run agent -- status cb_RelayJobId`}</CodeBlock>
           <section id="tallying">
             <p className="docs-kicker">Operations</p>
             <h2>Post-deadline committee tally</h2>
-            <p>The tally command refuses to decrypt before the on-chain deadline. Afterwards it recovers ballot events, verifies the deployed contract and proposal context, checks unique owners and commitments, decrypts valid envelopes, and produces the option totals and transcript evidence.</p>
+            <p>After the on-chain deadline, a registered committee member opens the proposal on the Results page and imports the proposal recovery kit. CipherBallot validates the key against the election public key, reconstructs every ballot directly from BOT Chain, decrypts locally, calculates the result, and generates a deterministic transcript and hash.</p>
+            <ol>
+              <li>Keep the recovery kit offline throughout voting and distribute it to committee members only after the deadline.</li>
+              <li>Connect a registered committee wallet and open the closed proposal on the Results page.</li>
+              <li>Import the recovery-kit JSON. The private key remains in the browser tab and is never uploaded or persisted.</li>
+              <li>Review the reconstructed option totals, ballot count, and transcript hash.</li>
+              <li>Select <strong>Publish and approve result</strong>. The public transcript is stored by content hash and the wallet submits the committee approval.</li>
+              <li>The contract finalizes automatically when matching approvals reach the threshold.</li>
+            </ol>
+            <div className="docs-warning"><strong>Privacy boundary</strong><p>Anyone receiving the election private key can decrypt individual ballots. Do not distribute the recovery kit before voting ends. The current transcript hash proves evidence integrity, not cryptographic correctness of decryption; threshold decryption and public correctness proofs remain roadmap work.</p></div>
+            <h3>Command-line fallback</h3>
+            <p>The local tally command remains available when the browser publisher is unavailable. It enforces the same on-chain deadline and key-to-proposal checks.</p>
             <CodeBlock language="bash">{`cd app
 ELECTION_PRIVATE_KEY=<OFFCHAIN_ELECTION_PRIVATE_KEY> \\
 PROPOSAL_ID=1 \\
 CIPHERBALLOT_CONTRACT_ADDRESS=${CONTRACT_ADDRESS || "0x..."} \\
 DEPLOYMENT_BLOCK=<DEPLOYMENT_BLOCK> \\
 npm run tally`}</CodeBlock>
-            <ol>
-              <li>Run the tally from a trusted operator machine after voting closes.</li>
-              <li>Publish the generated transcript to durable content-addressed or auditable storage.</li>
-              <li>Share the exact tally array, URI, proof hash, and tally secret with committee members through an authenticated channel.</li>
-              <li>Each member independently validates the evidence and submits the same approval payload.</li>
-              <li>The contract finalizes automatically when the threshold is reached.</li>
-            </ol>
-            <p>Approvals are bound to the proposal ID, final tally, transcript URI, and proof hash. A different payload is rejected with <code>TallyMismatch</code>.</p>
+            <p>Approvals are bound to the proposal ID, final tally, transcript URI, and transcript hash. A different payload is rejected with <code>TallyMismatch</code>.</p>
           </section>
 
           <section id="verification">
             <p className="docs-kicker">Operations</p>
             <h2>Results and protocol proof</h2>
-            <p>The Results page lists finalized proposals and exposes the winning option, complete tally, participation, committee approval count, evidence URI, and proof hash. The Proof page provides deployment identity and lifecycle-wide contract state.</p>
+            <p>The Results page lists finalized proposals and exposes the winning option, complete tally, participation, committee approval count, evidence URI, and transcript hash. The Proof page provides deployment identity and lifecycle-wide contract state.</p>
             <div className="docs-data-table">
               <div><strong>Contract identity</strong><span>Network, chain ID, configured address, deployed bytecode, and explorer source verification.</span></div>
               <div><strong>Participation</strong><span>Recorded ballot count and finalized tally total.</span></div>

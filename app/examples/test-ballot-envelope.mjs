@@ -17,6 +17,7 @@ import {
   encryptBallot,
   generateElectionKeyPair
 } from "./lib/ballot-envelope.mjs";
+import { decryptBallotEnvelope, encryptedBallotProofHash } from "../src/lib/ballotEncryption.ts";
 
 const keyPair = generateElectionKeyPair();
 assert.equal(isHexString(keyPair.privateKey, 32), true);
@@ -41,6 +42,18 @@ const decrypted = decryptBallot({
 assert.equal(decrypted.proposalId, context.proposalId);
 assert.equal(decrypted.voter.toLowerCase(), context.voter.toLowerCase());
 assert.equal(decrypted.optionIndex, context.optionIndex);
+assert.equal(encryptedBallotProofHash(encrypted.privateBallot), encrypted.ballotProofHash);
+
+const browserModuleDecrypted = await decryptBallotEnvelope({
+  privateBallot: encrypted.privateBallot,
+  electionPrivateKey: keyPair.privateKey,
+  proposalId: context.proposalId,
+  chainId: context.chainId,
+  contractAddress: context.contractAddress
+});
+assert.equal(browserModuleDecrypted.proposalId, context.proposalId);
+assert.equal(browserModuleDecrypted.voter.toLowerCase(), context.voter.toLowerCase());
+assert.equal(browserModuleDecrypted.optionIndex, context.optionIndex);
 
 assert.throws(() => decryptBallot({
   privateBallot: encrypted.privateBallot,

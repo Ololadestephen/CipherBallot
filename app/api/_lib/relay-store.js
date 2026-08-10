@@ -3,6 +3,7 @@ import { Redis } from "@upstash/redis";
 import { CHAIN_ID, CONTRACT_ADDRESS } from "./cipherballot.js";
 
 const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
+const TALLY_TTL_SECONDS = 365 * 24 * 60 * 60;
 const LOCK_TTL_SECONDS = 90;
 const memoryValues = new Map();
 let redis;
@@ -177,6 +178,22 @@ export async function consumeRateLimit(scope, identity, limit, windowSeconds = 6
     remaining: Math.max(0, boundedLimit - numericCount),
     retryAfter: Math.max(1, Number(ttl) || windowSeconds)
   };
+}
+
+export async function saveTallyTranscript(transcriptHash, transcript) {
+  const key = storeKey("tally", transcriptHash.toLowerCase());
+  if (localMemoryEnabled()) {
+    memoryWrite(key, transcript, TALLY_TTL_SECONDS, true);
+    return memoryRead(key);
+  }
+  await getRedis().set(key, transcript, { nx: true, ex: TALLY_TTL_SECONDS });
+  return getRedis().get(key);
+}
+
+export async function getTallyTranscript(transcriptHash) {
+  const key = storeKey("tally", transcriptHash.toLowerCase());
+  if (localMemoryEnabled()) return memoryRead(key);
+  return getRedis().get(key);
 }
 
 export function isLocalInlineRelay() {
