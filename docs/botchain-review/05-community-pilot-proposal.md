@@ -137,13 +137,13 @@ Contract addresses, proposal details, committee approvals, and final result evid
 3. Confirm mainnet RPC, chain ID, explorer verification, and funding requirements.
 4. Invite a controlled group of BOT Chain builders or community members.
 5. Provide an RPC/explorer contact during the voting window.
-6. Consider ecosystem or grant support for mainnet deployment, relayer operations, threshold cryptography, and post-mainnet token/NFT eligibility.
+6. Consider ecosystem or grant support for mainnet deployment, relayer operations, threshold cryptography, and token/NFT eligibility.
 7. Review the final evidence and identify opportunities for wider community governance use and BOT Chain ecosystem integration.
 
 ## Decision Requested
 
 CipherBallot requests confirmation of a pilot sponsor, proposal wording, participant group, three committee wallets, target network, and target week. Setup can begin as soon as these details are agreed, alongside discussion of the appropriate BOT Chain ecosystem-support or grant path.
 
-## Post-Mainnet Product Extension
+## Mainnet Eligibility Extension
 
-After the mainnet launch, CipherBallot plans to add snapshot-based eligibility for ERC-20 balances, ERC-721 ownership or minimum NFT counts, and ERC-1155 token IDs and balances. Proposal creators will configure the asset contract and minimum holding requirement while the protocol preserves one vote per eligible wallet. Snapshot proofs will prevent participants from voting, transferring the same asset to another wallet, and voting again.
+The current V2 contract is already source-verified on BOT Chain testnet. For the fresh mainnet deployment, CipherBallot plans to add snapshot-based eligibility for ERC-20 balances, ERC-721 ownership or minimum NFT counts, and ERC-1155 token IDs and balances. Proposal creators will configure the asset contract and minimum holding requirement while the protocol preserves one vote per eligible wallet. Snapshot proofs will prevent participants from voting, transferring the same asset to another wallet, and voting again.

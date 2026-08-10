@@ -65,7 +65,7 @@ Status legend:
 | Operational key ceremony | Pending | Name the kit custodian, backup location, release authority, and incident process before the pilot. |
 | Distributed threshold decryption | Roadmap | Current V2 has one election private key; DKG and threshold key shares are not implemented. |
 | Public proof of tally correctness | Roadmap | Transcript integrity is recorded, but correct decryption is not yet proven on-chain. |
-| Token and NFT eligibility | Post-mainnet roadmap | Add snapshot-based ERC-20, ERC-721, and ERC-1155 eligibility with configurable minimum holdings and one vote per eligible wallet. |
+| Token and NFT eligibility | Mainnet release | The current V2 contract is already source-verified on BOT Chain testnet. Add snapshot-based ERC-20, ERC-721, and ERC-1155 minimum-holding eligibility to the fresh mainnet deployment. |
 
 ## 5. Security And Quality Gates
 

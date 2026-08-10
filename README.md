@@ -354,7 +354,7 @@ The current release is ready for controlled governance pilots. Distributed thres
 - Distributed key generation and threshold decryption.
 - Public proof verification for decrypted ballots and final tallies.
 - Persistent agent runner with user-defined policies, safe abstention, and auditable decision receipts.
-- Post-mainnet snapshot-based ERC-20, ERC-721, and ERC-1155 eligibility with configurable minimum holdings and one vote per eligible wallet.
+- Mainnet release: snapshot-based ERC-20, ERC-721, and ERC-1155 eligibility with configurable minimum holdings and one vote per eligible wallet. The current V2 contract is already source-verified on BOT Chain testnet; this module will be included in the fresh mainnet deployment.
 - Event indexing, notifications, and richer governance analytics.
 - Account abstraction and broader gas sponsorship controls.
 - Mainnet deployment and community governance pilots.
