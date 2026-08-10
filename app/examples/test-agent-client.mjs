@@ -3,18 +3,22 @@ import {
   createProposalBrief,
   createAgentRuntime,
   createSignedVotePacket,
+  friendlyProposalCode,
   parseProposalBrief,
   parseSignedVotePacket
 } from "./lib/agent-client.mjs";
 import { encryptedBallotProofHash } from "./lib/ballot-envelope.mjs";
+import { proposalCodeFor } from "../api/_lib/proposal-code.js";
 
 const contract = "0x72fAAA6C70FD94567c8D75cb0800033FCE10dE3a";
 const voter = "0x8ac03Ec9430914B02df234c486eAFC79b072DAFa";
 const agent = "0x07cff11194d054a17E7E9EbEe87a744830404D17";
-const brief = createProposalBrief({ chainId: 968, contractAddress: contract, proposalId: 12, voter });
+const brief = createProposalBrief({ chainId: 968, contractAddress: contract, proposalId: 12, proposalCode: friendlyProposalCode(968, contract, 12), voter });
+assert.equal(brief.proposalCode, proposalCodeFor(968, contract, 12));
 assert.deepEqual(parseProposalBrief(JSON.stringify(brief)), brief);
 assert.deepEqual(parseProposalBrief(`\`\`\`json\n${JSON.stringify(brief)}\n\`\`\``), brief);
 assert.throws(() => parseProposalBrief(JSON.stringify({ ...brief, option: 0 })), /Unknown proposal brief field/);
+assert.throws(() => createProposalBrief({ chainId: 968, contractAddress: contract, proposalId: 12, proposalCode: "CB-0000-0000" }), /does not match/);
 
 const shared = {
   proposalId: "12",

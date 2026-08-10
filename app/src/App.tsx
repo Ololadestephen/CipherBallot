@@ -10,6 +10,7 @@ import Docs from "./pages/Docs";
 import Proof from "./pages/Proof";
 import NotFound from "./pages/NotFound";
 import Agents from "./pages/Agents";
+import CommitteePortal from "./pages/CommitteePortal";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/voters" element={<Voters />} />
         <Route path="/creators" element={<Creators />} />
         <Route path="/agents" element={<Agents />} />
+        <Route path="/committee/:code" element={<CommitteePortal />} />
         <Route path="/proposal/:id" element={<ProposalDetails />} />
         <Route path="/results" element={<Results />} />
         <Route path="/proof" element={<Proof />} />

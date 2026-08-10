@@ -1,5 +1,6 @@
 import {
   CHAIN_ID,
+  CONTRACT_ADDRESS,
   assertRuntimeConfiguration,
   errorMessage,
   getProvider,
@@ -9,6 +10,7 @@ import {
   setCors
 } from "../_lib/cipherballot.js";
 import { assertRelayStoreConfiguration, consumeRateLimit } from "../_lib/relay-store.js";
+import { isProposalCode, normalizeProposalCode, proposalCodeFor } from "../_lib/proposal-code.js";
 
 function requestHeader(req, name) {
   const entry = Object.entries(req.headers || {}).find(([key]) => key.toLowerCase() === name.toLowerCase());
@@ -48,6 +50,8 @@ export default async function handler(req, res) {
     if (!latestBlock) throw new Error("Unable to read the latest BOT Chain block.");
     const count = Number(proposalCount);
     const proposalIdText = req.query.proposalId === undefined ? "" : String(req.query.proposalId);
+    const proposalCodeText = req.query.proposalCode === undefined ? "" : String(req.query.proposalCode).trim().toUpperCase();
+    if (proposalIdText && proposalCodeText) return sendJson(res, 400, { error: "Use proposalId or proposalCode, not both." });
     const requestedProposalId = proposalIdText === "" || !/^[1-9][0-9]*$/.test(proposalIdText)
       ? null
       : Number(proposalIdText);
@@ -57,12 +61,26 @@ export default async function handler(req, res) {
     if (requestedProposalId !== null && (!Number.isSafeInteger(requestedProposalId) || requestedProposalId < 1 || requestedProposalId > count)) {
       return sendJson(res, 400, { error: "proposalId must identify an existing proposal." });
     }
+    if (req.query.proposalCode !== undefined && !isProposalCode(proposalCodeText)) {
+      return sendJson(res, 400, { error: "proposalCode must be a valid CipherBallot reference." });
+    }
+    let resolvedProposalId = requestedProposalId;
+    if (proposalCodeText) {
+      const matches = [];
+      for (let proposalId = 1; proposalId <= count; proposalId++) {
+        if (normalizeProposalCode(proposalCodeFor(CHAIN_ID, CONTRACT_ADDRESS, proposalId)) === normalizeProposalCode(proposalCodeText)) {
+          matches.push(proposalId);
+        }
+      }
+      if (matches.length !== 1) return sendJson(res, 400, { error: matches.length ? "proposalCode is ambiguous." : "proposalCode does not identify an existing proposal." });
+      resolvedProposalId = matches[0];
+    }
     const limitText = String(req.query.limit || "25");
     if (!/^[1-9][0-9]*$/.test(limitText)) return sendJson(res, 400, { error: "limit must be a positive decimal integer." });
     const requestedLimit = Number(limitText);
     const limit = Number.isSafeInteger(requestedLimit) ? Math.min(requestedLimit, 100) : 25;
-    const firstId = requestedProposalId ?? Math.max(1, count - limit + 1);
-    const lastId = requestedProposalId ?? count;
+    const firstId = resolvedProposalId ?? Math.max(1, count - limit + 1);
+    const lastId = resolvedProposalId ?? count;
     const rows = [];
 
     for (let proposalId = lastId; proposalId >= firstId; proposalId--) {
@@ -75,6 +93,7 @@ export default async function handler(req, res) {
       const now = latestBlock.timestamp;
       rows.push({
         id: proposalId,
+        proposalCode: proposalCodeFor(CHAIN_ID, CONTRACT_ADDRESS, proposalId),
         creator: proposal.creator,
         title: proposal.title,
         options: proposal.options,
@@ -96,7 +115,7 @@ export default async function handler(req, res) {
     return sendJson(res, 200, {
       chainId: CHAIN_ID,
       count,
-      ...(requestedProposalId === null ? { proposals: rows } : { proposal: rows[0] })
+      ...(resolvedProposalId === null ? { proposals: rows } : { proposal: rows[0] })
     });
   } catch (error) {
     const message = errorMessage(error);

@@ -1,11 +1,13 @@
-import { CheckCircle2, ChevronLeft, ChevronRight, Download, KeyRound, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Copy, Download, KeyRound, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useForm, useFieldArray } from "react-hook-form";
 import { SigningKey, getAddress, isHexString } from "ethers";
 import { BOT_CHAIN, CONTRACT_ADDRESS, createProposal, createThresholdProposal, explorerTx, friendlyEvmError, normalizeAddressList, useEvmWallet } from "../lib/evm";
 import { generateElectionKit } from "../lib/electionKey";
 import { PageHeader } from "../components/PageHeader";
+import { generateCommitteeHandoffKey } from "../lib/committeeHandoff";
+import { committeePortalPath, proposalCode } from "../lib/proposalCode";
 
 function toLocalDatetimeInputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -49,13 +51,18 @@ function isValidElectionPublicKey(value: string) {
 
 export default function Creators() {
   const wallet = useEvmWallet();
-  const navigate = useNavigate();
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [txHash, setTxHash] = useState("");
   const [activeStep, setActiveStep] = useState(0);
   const [electionPrivateKey, setElectionPrivateKey] = useState("");
+  const [committeeHandoffKey, setCommitteeHandoffKey] = useState("");
   const [recoveryKitDownloaded, setRecoveryKitDownloaded] = useState(false);
+  const [createdProposal, setCreatedProposal] = useState<{
+    id: number;
+    privacyMode: FormValues["privacyMode"];
+    handoffKey: string;
+  } | null>(null);
 
   const {
     register,
@@ -103,6 +110,7 @@ export default function Creators() {
     try {
       const kit = generateElectionKit();
       setElectionPrivateKey(kit.privateKey);
+      setCommitteeHandoffKey(kit.committeeHandoffKey);
       setRecoveryKitDownloaded(false);
       setValue("encryptionPublicKey", kit.publicKey, { shouldDirty: true, shouldValidate: true });
       setValue("tallySecret", kit.tallySecret, { shouldDirty: true, shouldValidate: true });
@@ -118,6 +126,7 @@ export default function Creators() {
 
   const useExternalKey = () => {
     setElectionPrivateKey("");
+    setCommitteeHandoffKey(generateCommitteeHandoffKey());
     setRecoveryKitDownloaded(false);
     setValue("encryptionPublicKey", "", { shouldDirty: true, shouldValidate: true });
     setValue("tallySecret", "", { shouldDirty: true, shouldValidate: true });
@@ -138,10 +147,12 @@ export default function Creators() {
       encryptionPublicKey: values.encryptionPublicKey.trim(),
       electionPrivateKey,
       committeeTallySecret: values.tallySecret.trim(),
+      committeeHandoffKey,
       instructions: [
         "Keep this file offline until the voting deadline has passed.",
         "Use electionPrivateKey with the CipherBallot tally command to decrypt ballot envelopes after the deadline.",
         "Committee members use committeeTallySecret when approving the matching final tally.",
+        "committeeHandoffKey encrypts the post-deadline committee portal package. Keep the original committee portal link available to committee members.",
         "Never paste electionPrivateKey into the proposal form or expose it to voters, agents, relayers, or frontend environment variables."
       ]
     };
@@ -203,12 +214,16 @@ export default function Creators() {
     if (committee.length > 16) return setMessage("The committee cannot exceed 16 addresses.");
 
     const thresholdCount = Math.max(0, Number(data.threshold));
+    const activeHandoffKey = data.privacyMode === "threshold"
+      ? (committeeHandoffKey || generateCommitteeHandoffKey())
+      : "";
+    if (activeHandoffKey !== committeeHandoffKey) setCommitteeHandoffKey(activeHandoffKey);
 
     try {
       setStatus("sending");
       setMessage("Creating BOT Chain proposal...");
       const contract = await wallet.getSignerContract();
-      const hash = data.privacyMode === "threshold"
+      const result = data.privacyMode === "threshold"
         ? await createThresholdProposal(
           contract,
           data.title.trim(),
@@ -222,12 +237,10 @@ export default function Creators() {
           data.tallySecret.trim()
         )
         : await createProposal(contract, data.title.trim(), activeOptions, startTs, endTs, allowlist);
-      setTxHash(hash);
+      setTxHash(result.hash);
+      setCreatedProposal({ id: result.proposalId, privacyMode: data.privacyMode, handoffKey: activeHandoffKey });
       setStatus("success");
-      setMessage("Proposal created on BOT Chain. Redirecting to Voters dashboard...");
-      setTimeout(() => {
-        navigate("/voters");
-      }, 1500);
+      setMessage("Proposal created on BOT Chain.");
     } catch (err) {
       setStatus("error");
       setMessage(friendlyEvmError(err, "Proposal creation failed."));
@@ -285,6 +298,16 @@ export default function Creators() {
       watchEligibility === "allowlist" ? ["eligibility", "allowlistRaw"] : ["eligibility"]
     ];
     if (await trigger(fieldsByStep[activeStep])) setActiveStep((step) => Math.min(creatorSteps.length - 1, step + 1));
+  };
+
+  const committeePortalUrl = createdProposal?.privacyMode === "threshold"
+    ? `${window.location.origin}${committeePortalPath(createdProposal.id)}#handoff=${createdProposal.handoffKey.slice(2)}`
+    : "";
+
+  const copyCommitteePortalUrl = async () => {
+    if (!committeePortalUrl) return;
+    await navigator.clipboard.writeText(committeePortalUrl);
+    setMessage("Committee portal link copied. Share this one link only with the proposal committee.");
   };
 
   return (
@@ -429,7 +452,7 @@ export default function Creators() {
                         </li>
                         <li className="required">
                           <span>Required</span>
-                          Share the private key only with committee operators after voting closes, never with voters or agents.
+                          Release committee access only through the encrypted portal after voting closes.
                         </li>
                         <li className="required">
                           <span>Required</span>
@@ -511,6 +534,22 @@ export default function Creators() {
           </div>
 
           {message && <div className={`feedback-msg ${status === "success" ? "done" : status === "error" ? "error" : ""}`}>{message}{txHash && <> <a href={explorerTx(txHash)} target="_blank" rel="noreferrer">View transaction</a></>}</div>}
+          {createdProposal && (
+            <div className="creator-success-panel">
+              <div>
+                <strong>{proposalCode(createdProposal.id)}</strong>
+                <p>{createdProposal.privacyMode === "threshold" ? "Your committee uses one shared portal for readiness and post-deadline tally access." : "Your proposal is ready for voters."}</p>
+              </div>
+              <div className="creator-success-actions">
+                {createdProposal.privacyMode === "threshold" && (
+                  <button type="button" className="cta icon-command" onClick={() => void copyCommitteePortalUrl()}>
+                    <Copy size={15} /> Copy committee link
+                  </button>
+                )}
+                <Link className="secondary-cta" to={`/proposal/${createdProposal.id}`}>Open proposal</Link>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </section>

@@ -6,6 +6,8 @@ import {
   getAddress,
   isAddress,
   isHexString,
+  keccak256,
+  toUtf8Bytes,
 } from "ethers";
 import { encryptBallot, encryptedBallotProofHash } from "./ballot-envelope.mjs";
 
@@ -23,6 +25,22 @@ const READ_ABI = [
   "function voterBallotNonces(address voter) view returns (uint256)",
   "function publicAgentNonces(address agent) view returns (uint256)"
 ];
+
+const PROPOSAL_CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+export function friendlyProposalCode(chainId, contractAddress, proposalId) {
+  const normalizedChainId = decimalString(chainId, "chainId", { positive: true });
+  const normalizedProposalId = decimalString(proposalId, "proposalId", { positive: true });
+  const contract = normalizeAddress(contractAddress, "contract");
+  const hash = keccak256(toUtf8Bytes(`${normalizedChainId}:${contract.toLowerCase()}:${normalizedProposalId}`));
+  let value = BigInt(`0x${hash.slice(2, 12)}`);
+  let encoded = "";
+  for (let index = 0; index < 8; index += 1) {
+    encoded = PROPOSAL_CODE_ALPHABET[Number(value & 31n)] + encoded;
+    value >>= 5n;
+  }
+  return `CB-${encoded.slice(0, 4)}-${encoded.slice(4)}`;
+}
 
 export const BALLOT_TYPES = {
   delegated: {
@@ -86,7 +104,7 @@ function normalizeAddress(value, name) {
   return getAddress(value);
 }
 
-export function createProposalBrief({ chainId, contractAddress, proposalId, voter }) {
+export function createProposalBrief({ chainId, contractAddress, proposalId, proposalCode, voter }) {
   const brief = {
     type: PROPOSAL_BRIEF_TYPE,
     version: PACKET_VERSION,
@@ -94,6 +112,16 @@ export function createProposalBrief({ chainId, contractAddress, proposalId, vote
     contract: normalizeAddress(contractAddress, "contract"),
     proposalId: decimalString(proposalId, "proposalId", { positive: true })
   };
+  if (proposalCode) {
+    if (!/^CB-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/.test(String(proposalCode).toUpperCase())) {
+      throw new Error("proposalCode is not a valid CipherBallot reference.");
+    }
+    const normalizedCode = String(proposalCode).toUpperCase();
+    if (normalizedCode !== friendlyProposalCode(brief.chainId, brief.contract, brief.proposalId)) {
+      throw new Error("proposalCode does not match the canonical proposal identity.");
+    }
+    brief.proposalCode = normalizedCode;
+  }
   if (voter) brief.voter = normalizeAddress(voter, "voter");
   return brief;
 }
@@ -103,13 +131,14 @@ export function parseProposalBrief(input) {
   if (value.type !== PROPOSAL_BRIEF_TYPE || value.version !== PACKET_VERSION) {
     throw new Error("Unsupported CipherBallot proposal brief.");
   }
-  const allowed = new Set(["type", "version", "chainId", "contract", "proposalId", "voter"]);
+  const allowed = new Set(["type", "version", "chainId", "contract", "proposalId", "proposalCode", "voter"]);
   const unknown = Object.keys(value).find((field) => !allowed.has(field));
   if (unknown) throw new Error(`Unknown proposal brief field: ${unknown}.`);
   return createProposalBrief({
     chainId: value.chainId,
     contractAddress: value.contract,
     proposalId: value.proposalId,
+    proposalCode: value.proposalCode,
     voter: value.voter
   });
 }

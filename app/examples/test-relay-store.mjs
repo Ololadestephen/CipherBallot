@@ -7,14 +7,23 @@ delete process.env.VERCEL_ENV;
 
 const {
   acquireRelayLock,
+  consumeCommitteeChallenge,
   consumeRateLimit,
+  createCommitteeChallenge,
   createRelayJob,
+  deleteCommitteeHandoff,
+  getCommitteeHandoff,
   getTallyTranscript,
   getRelayJob,
   isRelayJobId,
+  listCommitteeHandoffRetrievals,
+  listCommitteeReadiness,
+  markCommitteeHandoffRetrieved,
   normalizeStoredTallyTranscript,
   releaseRelayLock,
   relayJobId,
+  saveCommitteeHandoff,
+  saveCommitteeReadiness,
   saveTallyTranscript,
   saveRelayJob
 } = await import("../api/_lib/relay-store.js");
@@ -69,4 +78,18 @@ assert.equal(
   tallyTranscript
 );
 
-console.log(JSON.stringify({ result: "passed", relayJobId: id, idempotent: true, distributedLock: true, rateLimit: true, tallyStorage: true }, null, 2));
+const challenge = await createCommitteeChallenge({ proposalId: 1, address: request.agent, purpose: "readiness", message: "test" });
+assert.equal((await consumeCommitteeChallenge(challenge.id)).message, "test");
+assert.equal(await consumeCommitteeChallenge(challenge.id), null);
+
+await saveCommitteeReadiness(1, request.agent, "2026-08-10T10:00:00.000Z");
+assert.equal((await listCommitteeReadiness(1))[0].address, request.agent);
+const handoffPackage = { version: "cipherballot-committee-handoff-v1", ciphertext: "encrypted" };
+await saveCommitteeHandoff(1, handoffPackage, "0x3333333333333333333333333333333333333333");
+assert.deepEqual((await getCommitteeHandoff(1)).package, handoffPackage);
+await markCommitteeHandoffRetrieved(1, request.agent);
+assert.equal((await listCommitteeHandoffRetrievals(1))[0].address, request.agent);
+await deleteCommitteeHandoff(1);
+assert.equal(await getCommitteeHandoff(1), null);
+
+console.log(JSON.stringify({ result: "passed", relayJobId: id, idempotent: true, distributedLock: true, rateLimit: true, tallyStorage: true, committeeStorage: true }, null, 2));

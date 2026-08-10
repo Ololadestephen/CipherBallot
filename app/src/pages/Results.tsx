@@ -19,6 +19,7 @@ import {
 } from "../lib/evm";
 import { ResultCard } from "../components/ResultCard";
 import { PageHeader } from "../components/PageHeader";
+import { committeePortalPath, proposalCode } from "../lib/proposalCode";
 
 export default function Results() {
   const wallet = useEvmWallet();
@@ -344,10 +345,17 @@ export default function Results() {
           </div>
         )}
 
+        {selected.privacyMode === "SecretSealed" && (
+          <div className="result-action-row">
+            <Link className="secondary-cta" to={committeePortalPath(selected.id)}>Open committee portal</Link>
+          </div>
+        )}
+
         <div className="result-evidence-grid">
           <div className="result-evidence-block">
             <strong>On-Chain Verification</strong>
-            <p>Proposal ID: #{selected.id}</p>
+            <p>Reference: {proposalCode(selected.id)}</p>
+            <p>On-chain proposal ID: #{selected.id}</p>
             <p>
               Contract:{" "}
               <a href={explorerAddress(selected.address)} target="_blank" rel="noreferrer">

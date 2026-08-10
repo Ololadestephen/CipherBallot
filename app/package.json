@@ -12,6 +12,7 @@
     "test:agent-client": "node examples/test-agent-client.mjs",
     "test:relay-store": "node examples/test-relay-store.mjs",
     "test:tally-transcript": "node examples/test-tally-transcript.mjs",
+    "test:committee-handoff": "node examples/test-committee-handoff.mjs",
     "test:e2e": "forge build --root .. && node examples/local-agent-e2e.mjs",
     "agent": "node examples/agent-cli.mjs",
     "keygen": "node examples/generate-election-key.mjs",

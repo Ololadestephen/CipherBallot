@@ -1,6 +1,7 @@
 import { ChevronRight, Clock3, ShieldCheck, Vote } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { ProposalView } from "../lib/evm";
+import { proposalCode } from "../lib/proposalCode";
 
 export function ResultCard({ proposal }: { proposal: ProposalView }) {
   const total = proposal.finalTally.reduce((sum, item) => sum + item, 0);
@@ -12,7 +13,7 @@ export function ResultCard({ proposal }: { proposal: ProposalView }) {
     <Link to={`/results?proposal=${proposal.id}`} className="result-row">
       <div className="result-row-status">
         <span className={`pill status-${proposal.status.toLowerCase()}`}>{proposal.status}</span>
-        <span>#{proposal.id}</span>
+        <span>{proposalCode(proposal.id)}</span>
       </div>
       <div className="result-row-main">
         <h2>{proposal.title}</h2>
