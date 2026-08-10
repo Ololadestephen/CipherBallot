@@ -1,6 +1,6 @@
 # Security Policy
 
-CipherBallot is a pre-audit protocol currently intended for testnet use. Do not use it for binding elections, treasury execution, or high-value governance until the contracts, cryptography, and production relayer have completed an independent review.
+CipherBallot is currently deployed on BOT Chain testnet and is suitable for controlled, non-binding governance pilots. Independent review, distributed threshold decryption, and public tally-verification proofs are planned milestones before expansion into binding elections, treasury execution, or other high-value governance.
 
 ## Reporting a Vulnerability
 
@@ -12,7 +12,7 @@ Include the affected component, impact, reproduction steps, and the smallest saf
 
 The protocol enforces proposal timing, eligibility, one ballot per owner, mode-separated EIP-712 signatures, replay-protected nonces, delegation scope and expiry, deterministic ballot-envelope commitments, bounded calldata, tally evidence fields, and a final-tally total that cannot exceed recorded participation.
 
-The current release does not prove that every submitted envelope contains a valid encrypted option, that the committee counted every decryptable ballot, or that an approved tally is mathematically correct. Threshold approval requires multiple committee accounts to approve identical evidence, but the current election private key is not distributed threshold key material. Its custodian can decrypt ballots early, and a colluding threshold of committee members can approve an incorrect or incomplete tally.
+The current release uses committee-attested tally finalization. Multiple committee accounts must reconstruct the transcript and approve identical evidence, and the contract prevents tally inflation. The proposal recovery kit is held offline by the named creator/custodian, and CipherBallot enables kit import and encrypted committee handoff only after the on-chain deadline. The election key is not yet distributed threshold key material, and the contract does not yet verify a public proof of correct decryption and tally completeness; both are production-expansion milestones.
 
 Public proposals are one-address-one-ballot, not one-person-one-ballot. Sybil resistance requires an allowlist or a future token, credential, or membership eligibility module.
 

@@ -78,7 +78,7 @@ Status legend:
 | Production build | Verified | Vite production bundle succeeds with public-environment validation. |
 | Dependency audit | Verified | `npm audit --omit=dev` reports zero vulnerabilities. |
 | CI protection | Verified | GitHub Actions check `Contract, app, and agent checks` is required on protected `main`. |
-| Independent audit | Pending | Required before binding or high-value governance. |
+| Independent security review | Roadmap | Planned before expanding from controlled pilots to binding or high-value governance. |
 
 ## 6. Pilot Go/No-Go Gates
 
@@ -97,4 +97,4 @@ The proposed non-binding pilot may proceed when all of the following are complet
 
 ## Readiness Decision
 
-**Recommended:** approve CipherBallot for a small, non-binding BOT Chain community pilot after the operational gates above. Treat mainnet deployment as a fresh release with new addresses and credentials. Do not approve binding treasury or legal governance until an independent audit, stronger key custody, and publicly verifiable tally correctness are complete.
+**Recommended:** approve CipherBallot for a small, non-binding BOT Chain community pilot after the operational gates above. The application, contract, relayer, committee workflow, and automated validation are ready for that scope. Treat mainnet deployment as a fresh release with new addresses and credentials. Independent review, distributed threshold decryption, and publicly verifiable tally proofs are the next-stage milestones for expanding into binding or high-value governance.

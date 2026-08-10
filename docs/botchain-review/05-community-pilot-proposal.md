@@ -40,6 +40,12 @@ BOT Chain may replace the wording and options with another real, low-risk commun
 | Public-agent demonstration | Optional separate public sandbox proposal because allowlisted proposals intentionally reject public-agent self-votes |
 | Result status | Advisory and non-binding |
 
+## Pilot Security Basis
+
+CipherBallot's current controls are suitable for this limited pilot scope. The participant allowlist prevents uninvited wallets from voting, the contract enforces one ballot per eligible owner, ballots remain encrypted on-chain during voting, and three named committee wallets require two matching approvals to finalize the result. The creator keeps the recovery kit offline and imports it only after the deadline to prepare encrypted, wallet-bound committee handoffs.
+
+The pilot is designed to validate a real governance process while keeping the decision advisory. Independent review, distributed threshold decryption, and public tally-verification proofs remain the planned path for future binding or high-value use cases.
+
 ## Roles
 
 ### CipherBallot
@@ -50,7 +56,7 @@ BOT Chain may replace the wording and options with another real, low-risk commun
 - generate and protect the election recovery kit;
 - provide the participant guide and support channel;
 - monitor API, queue, RPC, relayer, and contract activity;
-- coordinate post-deadline handoff without seeing or publishing individual choices;
+- coordinate the encrypted post-deadline handoff and avoid publishing individual ballot choices;
 - produce the final evidence and pilot report.
 
 ### BOT Chain

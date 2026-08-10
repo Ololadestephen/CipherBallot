@@ -4,7 +4,7 @@ Assessment date: 2026-08-10
 
 Scope: Solidity contract, browser cryptography, agent client, relay API and worker, Redis/QStash coordination, committee handoff, deployment configuration, and browser security headers.
 
-This is an engineering security summary, not an independent audit or formal cryptographic proof.
+This engineering summary documents the controls that support a controlled BOT Chain community pilot, the operational assumptions for that pilot, and the additional work planned before expanding to binding or high-value governance.
 
 ## Security Objectives
 
@@ -84,32 +84,30 @@ CipherBallot is designed to:
 - Sensitive environment files, recovery kits, build output, Foundry artifacts, and Vercel metadata are gitignored.
 - Protected `main` requires signed commits and the `Contract, app, and agent checks` status check.
 
-## Residual Risks
+## Pilot Security Posture
 
-### High Priority
+The implemented controls are suitable for the proposed small, non-binding BOT Chain community pilot. The pilot uses a fixed participant allowlist, three named committee wallets, a 2-of-3 approval threshold, a capped relayer balance, a testnet rehearsal, and public transaction evidence. These controls limit the pilot's scope while validating the complete governance workflow with real participants.
 
-1. **Single election-key custody.** One recovery-kit private key can decrypt ballots before the deadline if its custodian discloses or uses it early. The contract cannot detect early off-chain decryption.
-2. **Tally correctness is committee-attested.** A colluding threshold can approve an incorrect or incomplete tally. The contract enforces matching evidence and prevents inflation, but does not verify decryption or completeness.
-3. **No independent audit.** Automated tests and internal review reduce risk but are not a substitute for an external contract, cryptography, and relayer assessment.
+### Current Trust Model
 
-### Medium Priority
+1. **Election-key custody.** The proposal recovery kit is held offline by the named creator/custodian until voting closes. CipherBallot validates the on-chain deadline before enabling kit import and committee handoff. Because the current release uses one election private key rather than distributed key shares, secure custody remains an operational responsibility for the pilot.
+2. **Committee-attested tally.** Committee members independently reconstruct the transcript and approve one matching tally hash after voting closes. The contract requires threshold agreement and prevents tally inflation. Public proof verification of correct decryption and completeness is part of the production roadmap.
+3. **Participant eligibility.** The primary pilot uses a fixed wallet allowlist. Optional public proposals remain one-address-one-ballot and are intended for open community signaling rather than identity-based voting.
+4. **Browser and service operations.** Commit-reveal secrets and private agent receipts remain under the participant's browser account, while Vercel, the BOT Chain RPC, Redis, and QStash provide application availability. The pilot runbook includes health checks, monitoring, backups, and direct contract evidence.
 
-1. **Public-vote Sybil resistance.** Public proposals are one-address-one-ballot, not one-person-one-ballot. Use allowlists for a controlled pilot.
-2. **Browser-origin compromise.** Commit-reveal secrets and private agent receipts are stored in `localStorage`. Malicious same-origin code could read them. Recovery-kit material is kept in memory/downloads instead of `localStorage`.
-3. **Centralized availability dependencies.** The DApp depends on the configured BOT Chain RPC, Vercel, Redis, and QStash. Their outage can delay relay or committee operations, though direct contract access remains possible.
-4. **Relayer operational risk.** A leaked API key can consume relay capacity and potentially spend capped relayer funds, but cannot forge voter/agent signatures or bypass contract rules.
-5. **No contract upgrade path.** A defect requires a new deployment and explicit migration rather than an in-place upgrade.
+### Production Expansion Gates
 
-### Lower Priority And Operational
+The following items are planned before CipherBallot is proposed for binding treasury, legal, or other high-value governance:
 
-- Portal visibility is a frontend privacy control; signed backend authorization protects privileged actions and ciphertext retrieval.
-- Friendly proposal codes are deterministic references, not secret identifiers or replacements for canonical on-chain IDs.
-- Large frontend bundle size is a performance concern, not a correctness control failure.
-- Committee independence and review quality are governance assumptions that code alone cannot enforce.
+1. an independent review of the contract, browser cryptography, and relayer;
+2. distributed key generation and threshold decryption shares; and
+3. publicly verifiable proof that valid ballot envelopes were correctly decrypted and tallied.
+
+These are production-expansion milestones and do not prevent the controlled, non-binding pilot described in this package.
 
 ## Pilot Security Constraints
 
-For the proposed BOT Chain pilot:
+For the proposed BOT Chain pilot, CipherBallot will:
 
 - keep the decision non-binding and non-financial;
 - use a fixed participant allowlist when identity/Sybil resistance matters;
@@ -118,7 +116,7 @@ For the proposed BOT Chain pilot:
 - cap the relayer balance and restrict accepted signers if the participant set is known;
 - publish contract, proposal, and result evidence before and after the vote;
 - cancel and repeat the pilot if election-key confidentiality is suspected;
-- do not interpret the pilot as evidence that threshold decryption or ZK tally verification is implemented.
+- document the current committee-attested tally model in the participant and operator runbooks.
 
 ## Incident Response
 

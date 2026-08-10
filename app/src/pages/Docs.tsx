@@ -126,7 +126,7 @@ export default function Docs() {
             <p>People can vote from the application, sign a single ballot for relay, or delegate a narrow voting permission. Agents can execute those signed instructions, act under an active delegation, or vote under their own identity on an open proposal.</p>
             <div className="docs-callout">
               <strong>Current release</strong>
-              <p>CipherBallot V2 is a pre-audit testnet release. It is suitable for pilots and evaluation, not binding elections or high-value treasury governance.</p>
+              <p>CipherBallot V2 is live on BOT Chain testnet and suitable for controlled, non-binding governance pilots. Independent review and threshold-cryptography milestones support its future expansion into binding and high-value governance.</p>
             </div>
             <div className="docs-data-table">
               <div><strong>Private participation</strong><span>Secret-sealed ballots publish ciphertext and commitments instead of readable choices.</span></div>
