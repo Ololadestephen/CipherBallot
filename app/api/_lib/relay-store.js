@@ -4,6 +4,9 @@ import { CHAIN_ID, CONTRACT_ADDRESS } from "./cipherballot.js";
 
 const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TALLY_TTL_SECONDS = 365 * 24 * 60 * 60;
+const COMMITTEE_STATUS_TTL_SECONDS = 365 * 24 * 60 * 60;
+const COMMITTEE_HANDOFF_TTL_SECONDS = 90 * 24 * 60 * 60;
+const COMMITTEE_CHALLENGE_TTL_SECONDS = 5 * 60;
 const LOCK_TTL_SECONDS = 90;
 const TALLY_STORAGE_FORMAT = "cipherballot-tally-storage-v1";
 const memoryValues = new Map();
@@ -211,6 +214,139 @@ export async function getTallyTranscript(transcriptHash) {
   const key = storeKey("tally", transcriptHash.toLowerCase());
   if (localMemoryEnabled()) return normalizeStoredTallyTranscript(memoryRead(key));
   return normalizeStoredTallyTranscript(await getRedis().get(key));
+}
+
+function parseStoredObject(value) {
+  if (!value) return null;
+  if (typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value !== "string") return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function createCommitteeChallenge(challenge) {
+  const id = `cc_${randomBytes(24).toString("hex")}`;
+  const value = { ...challenge, id };
+  const key = storeKey("committee-challenge", id);
+  if (localMemoryEnabled()) {
+    memoryWrite(key, value, COMMITTEE_CHALLENGE_TTL_SECONDS);
+    return value;
+  }
+  await getRedis().set(key, value, { ex: COMMITTEE_CHALLENGE_TTL_SECONDS });
+  return value;
+}
+
+export async function consumeCommitteeChallenge(id) {
+  if (!/^cc_[0-9a-f]{48}$/.test(String(id || ""))) return null;
+  const key = storeKey("committee-challenge", id);
+  if (localMemoryEnabled()) {
+    const value = memoryRead(key);
+    memoryValues.delete(key);
+    return parseStoredObject(value);
+  }
+  const value = await getRedis().eval(
+    "local value = redis.call('GET', KEYS[1]); if value then redis.call('DEL', KEYS[1]); end; return value",
+    [key],
+    []
+  );
+  return parseStoredObject(value);
+}
+
+export async function saveCommitteeReadiness(proposalId, address, readyAt) {
+  const normalizedAddress = address.toLowerCase();
+  const record = { address, readyAt };
+  const recordKey = storeKey(`committee-ready:${proposalId}`, normalizedAddress);
+  const indexKey = storeKey("committee-ready-index", String(proposalId));
+  if (localMemoryEnabled()) {
+    memoryWrite(recordKey, record, COMMITTEE_STATUS_TTL_SECONDS);
+    const members = new Set(memoryRead(indexKey) || []);
+    members.add(normalizedAddress);
+    memoryWrite(indexKey, [...members], COMMITTEE_STATUS_TTL_SECONDS);
+    return record;
+  }
+  await getRedis().set(recordKey, record, { ex: COMMITTEE_STATUS_TTL_SECONDS });
+  await getRedis().sadd(indexKey, normalizedAddress);
+  await getRedis().expire(indexKey, COMMITTEE_STATUS_TTL_SECONDS);
+  return record;
+}
+
+export async function listCommitteeReadiness(proposalId) {
+  const indexKey = storeKey("committee-ready-index", String(proposalId));
+  const members = localMemoryEnabled() ? (memoryRead(indexKey) || []) : await getRedis().smembers(indexKey);
+  const records = [];
+  for (const address of members) {
+    const key = storeKey(`committee-ready:${proposalId}`, String(address).toLowerCase());
+    const value = localMemoryEnabled() ? memoryRead(key) : await getRedis().get(key);
+    const record = parseStoredObject(value);
+    if (record) records.push(record);
+  }
+  return records;
+}
+
+export async function saveCommitteeHandoff(proposalId, handoffPackage, creator) {
+  const key = storeKey("committee-handoff", String(proposalId));
+  const value = {
+    package: handoffPackage,
+    creator,
+    releasedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + COMMITTEE_HANDOFF_TTL_SECONDS * 1_000).toISOString()
+  };
+  if (localMemoryEnabled()) {
+    memoryWrite(key, value, COMMITTEE_HANDOFF_TTL_SECONDS);
+    return value;
+  }
+  await getRedis().set(key, value, { ex: COMMITTEE_HANDOFF_TTL_SECONDS });
+  return value;
+}
+
+export async function getCommitteeHandoff(proposalId) {
+  const key = storeKey("committee-handoff", String(proposalId));
+  const value = localMemoryEnabled() ? memoryRead(key) : await getRedis().get(key);
+  return parseStoredObject(value);
+}
+
+export async function deleteCommitteeHandoff(proposalId) {
+  const key = storeKey("committee-handoff", String(proposalId));
+  if (localMemoryEnabled()) {
+    memoryValues.delete(key);
+    return;
+  }
+  await getRedis().del(key);
+}
+
+export async function markCommitteeHandoffRetrieved(proposalId, address) {
+  const normalizedAddress = address.toLowerCase();
+  const record = { address, retrievedAt: new Date().toISOString() };
+  const recordKey = storeKey(`committee-retrieved:${proposalId}`, normalizedAddress);
+  const indexKey = storeKey("committee-retrieved-index", String(proposalId));
+  if (localMemoryEnabled()) {
+    memoryWrite(recordKey, record, COMMITTEE_HANDOFF_TTL_SECONDS);
+    const members = new Set(memoryRead(indexKey) || []);
+    members.add(normalizedAddress);
+    memoryWrite(indexKey, [...members], COMMITTEE_HANDOFF_TTL_SECONDS);
+    return record;
+  }
+  await getRedis().set(recordKey, record, { ex: COMMITTEE_HANDOFF_TTL_SECONDS });
+  await getRedis().sadd(indexKey, normalizedAddress);
+  await getRedis().expire(indexKey, COMMITTEE_HANDOFF_TTL_SECONDS);
+  return record;
+}
+
+export async function listCommitteeHandoffRetrievals(proposalId) {
+  const indexKey = storeKey("committee-retrieved-index", String(proposalId));
+  const members = localMemoryEnabled() ? (memoryRead(indexKey) || []) : await getRedis().smembers(indexKey);
+  const records = [];
+  for (const address of members) {
+    const key = storeKey(`committee-retrieved:${proposalId}`, String(address).toLowerCase());
+    const value = localMemoryEnabled() ? memoryRead(key) : await getRedis().get(key);
+    const record = parseStoredObject(value);
+    if (record) records.push(record);
+  }
+  return records;
 }
 
 export function isLocalInlineRelay() {

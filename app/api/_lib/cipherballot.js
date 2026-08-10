@@ -19,6 +19,7 @@ export const ABI = [
   "function getProposal(uint256 proposalId) view returns (address creator,string title,string[] options,uint64 startTime,uint64 endTime,uint64 revealDeadline,bool allowlistEnabled,uint256 allowedVoterCount,bool finalized,uint256 voteCount,uint256 revealCount,uint256[] finalTally)",
   "function getPrivacyConfig(uint256 proposalId) view returns (uint8 mode,bytes32 tallySecretCommitment,uint256 committeeMemberCount,uint256 threshold,uint256 tallyApprovalCount,bytes32 tallyHash,string tallyURI,bytes32 tallyProofHash)",
   "function getEncryptionPublicKey(uint256 proposalId) view returns (bytes)",
+  "function isCommitteeMember(uint256 proposalId,address member) view returns (bool)",
   "function getAgentDelegation(address voter,address agent) view returns (uint64 expiresAt,uint256 proposalId,bool active)",
   "function agentNonces(address voter,address agent) view returns (uint256)",
   "function voterBallotNonces(address voter) view returns (uint256)",

@@ -4,6 +4,7 @@ export type ElectionKit = {
   publicKey: string;
   privateKey: string;
   tallySecret: string;
+  committeeHandoffKey: string;
 };
 
 export function generateElectionKit(): ElectionKit {
@@ -13,7 +14,8 @@ export function generateElectionKit(): ElectionKit {
       return {
         privateKey,
         publicKey: new SigningKey(privateKey).publicKey,
-        tallySecret: hexlify(randomBytes(32))
+        tallySecret: hexlify(randomBytes(32)),
+        committeeHandoffKey: hexlify(randomBytes(32))
       };
     } catch {
       // Retry the vanishingly unlikely invalid secp256k1 scalar.

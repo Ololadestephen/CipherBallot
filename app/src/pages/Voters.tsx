@@ -5,6 +5,7 @@ import { PageHeader } from "../components/PageHeader";
 import { ProposalCard } from "../components/ProposalCard";
 import { RevealReminderPanel } from "../components/RevealReminderPanel";
 import { BOT_CHAIN, fetchProposals, type ProposalView, useEvmWallet } from "../lib/evm";
+import { normalizeProposalCode, proposalCode } from "../lib/proposalCode";
 
 const filters = ["All", "Active", "Reveal", "Tallying", "Finalized"] as const;
 type ProposalFilter = typeof filters[number];
@@ -42,7 +43,9 @@ export default function Voters() {
     if (filter !== "All") result = result.filter((proposal) => proposal.status === filter);
     if (searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
-      result = result.filter((proposal) => proposal.title.toLowerCase().includes(query) || String(proposal.id) === query);
+      result = result.filter((proposal) => proposal.title.toLowerCase().includes(query)
+        || String(proposal.id) === query
+        || normalizeProposalCode(proposalCode(proposal.id)) === normalizeProposalCode(query));
     }
     return result;
   }, [allProposals, filter, searchQuery]);

@@ -1,6 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { BrowserProvider, Contract, Interface, JsonRpcProvider, SigningKey, ZeroHash, getAddress, hexlify, id, isHexString, keccak256, randomBytes, toUtf8Bytes } from "ethers";
+import { BrowserProvider, Contract, ContractTransactionReceipt, Interface, JsonRpcProvider, SigningKey, ZeroHash, getAddress, hexlify, id, isHexString, keccak256, randomBytes, toUtf8Bytes } from "ethers";
 import { decryptBallotEnvelope, encryptedBallotProofHash, encryptBallotEnvelope } from "./ballotEncryption";
+import { BOT_CHAIN, CONTRACT_ADDRESS, CONTRACT_DEPLOYMENT_BLOCK } from "./network";
+import { proposalCode } from "./proposalCode";
+
+export { BOT_CHAIN, CONTRACT_ADDRESS, CONTRACT_DEPLOYMENT_BLOCK } from "./network";
 
 declare global {
   interface Window {
@@ -11,22 +15,6 @@ declare global {
     };
   }
 }
-
-export const BOT_CHAIN = {
-  chainId: 968,
-  chainHex: "0x3c8",
-  name: "BOT Chain Testnet",
-  rpcUrl: import.meta.env.VITE_BOTCHAIN_RPC_URL || "https://rpc.bohr.life",
-  explorerUrl: import.meta.env.VITE_BOTCHAIN_EXPLORER_URL || "https://scan.bohr.life",
-  nativeCurrency: {
-    name: "BOT",
-    symbol: "BOT",
-    decimals: 18
-  }
-};
-
-export const CONTRACT_ADDRESS = (import.meta.env.VITE_CIPHERBALLOT_CONTRACT_ADDRESS || "").trim();
-export const CONTRACT_DEPLOYMENT_BLOCK = Number(import.meta.env.VITE_CIPHERBALLOT_DEPLOYMENT_BLOCK || 19_063_989);
 
 export const ALREADY_VOTED_MESSAGE = "This wallet has already voted on this proposal. A ballot submitted by an authorized agent also uses the voter's single vote.";
 
@@ -755,7 +743,24 @@ export async function createProposal(
 ) {
   const tx = await contract.createProposal(title, options, startTs, endTs, allowlist);
   const receipt = await tx.wait();
-  return receipt?.hash || tx.hash;
+  return createdProposalResult(contract, receipt, tx.hash);
+}
+
+function createdProposalResult(contract: Contract, receipt: ContractTransactionReceipt | null, fallbackHash: string) {
+  let proposalId = 0;
+  for (const log of receipt?.logs || []) {
+    try {
+      const parsed = contract.interface.parseLog(log);
+      if (parsed?.name === "ProposalCreated") {
+        proposalId = toNumber(parsed.args.proposalId);
+        break;
+      }
+    } catch {
+      // Ignore unrelated logs in the transaction receipt.
+    }
+  }
+  if (!proposalId) throw new Error("Proposal transaction confirmed, but its proposal ID could not be read.");
+  return { hash: receipt?.hash || fallbackHash, proposalId };
 }
 
 export async function createThresholdProposal(
@@ -783,7 +788,7 @@ export async function createThresholdProposal(
     tallySecretCommitment
   );
   const receipt = await tx.wait();
-  return receipt?.hash || tx.hash;
+  return createdProposalResult(contract, receipt, tx.hash);
 }
 
 export async function checkEligibility(proposalId: number, account: string): Promise<boolean> {
@@ -833,6 +838,7 @@ export function createAgentProposalBrief(proposal: ProposalView, voter?: string)
     chainId: String(BOT_CHAIN.chainId),
     contract: CONTRACT_ADDRESS,
     proposalId: String(proposal.id),
+    proposalCode: proposalCode(proposal.id),
     ...(voter ? { voter: getAddress(voter) } : {})
   }, null, 2);
 }

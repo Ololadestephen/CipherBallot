@@ -258,6 +258,7 @@ VITE_CIPHERBALLOT_CONTRACT_ADDRESS=${CONTRACT_ADDRESS || "0x..."}`}</CodeBlock>
   "chainId": "${BOT_CHAIN.chainId}",
   "contract": "${CONTRACT_ADDRESS || "0x..."}",
   "proposalId": "1",
+  "proposalCode": "CB-XXXX-XXXX",
   "voter": "0x..."
 }`}</CodeBlock>
             <p>The agent client rejects an unexpected chain, contract, proposal state, privacy mode, public key, or API/on-chain mismatch before it encrypts or signs.</p>
@@ -294,7 +295,8 @@ npm run agent -- status cb_RelayJobId`}</CodeBlock>
               <li>For secret-sealed voting, add 2–16 committee addresses and a threshold of at least two.</li>
               <li>Generate the election security kit, download it, and store it offline before continuing.</li>
               <li>Choose public or allowlist eligibility and review every immutable setting.</li>
-              <li>Publish the transaction and retain its explorer link.</li>
+              <li>Publish the transaction, retain its explorer link, and copy the single committee portal link.</li>
+              <li>Share the portal link privately with the listed committee members so they can confirm readiness.</li>
             </ol>
             <div className="docs-data-table">
               <div><strong>Title</strong><span>1–160 UTF-8 bytes.</span></div>
@@ -303,22 +305,24 @@ npm run agent -- status cb_RelayJobId`}</CodeBlock>
               <div><strong>Committee</strong><span>2–16 unique, non-zero addresses.</span></div>
               <div><strong>Threshold</strong><span>At least 2 and no greater than the committee size.</span></div>
             </div>
-            <div className="docs-warning"><strong>Recovery kit</strong><p>The generated private key and tally secret exist only in the page until downloaded. Losing the kit can permanently prevent decryption; exposing it can reveal ballots before the deadline.</p></div>
+            <div className="docs-warning"><strong>Recovery kit</strong><p>The generated private key, tally secret, and committee handoff key exist only in the page until downloaded. Losing the kit can permanently prevent decryption or handoff recovery; exposing it can reveal ballots before the deadline.</p></div>
           </section>
 
           <section id="tallying">
             <p className="docs-kicker">Operations</p>
             <h2>Post-deadline committee tally</h2>
-            <p>After the on-chain deadline, a registered committee member opens the proposal on the Results page and imports the proposal recovery kit. CipherBallot validates the key against the election public key, reconstructs every ballot directly from BOT Chain, decrypts locally, calculates the result, and generates a deterministic transcript and hash.</p>
+            <p>After the on-chain deadline, the creator imports the recovery-kit JSON once in the Committee Portal and releases an encrypted package. Only ciphertext is uploaded. Registered committee wallets use the original shared portal link to decrypt the package locally, reconstruct every ballot directly from BOT Chain, calculate the result, and generate the deterministic transcript and hash.</p>
             <ol>
-              <li>Keep the recovery kit offline throughout voting and distribute it to committee members only after the deadline.</li>
-              <li>Connect a registered committee wallet and open the closed proposal on the Results page.</li>
-              <li>Import the recovery-kit JSON. The private key remains in the browser tab and is never uploaded or persisted.</li>
-              <li>Review the reconstructed option totals, ballot count, and transcript hash.</li>
-              <li>Select <strong>Publish and approve result</strong>. The public transcript is stored by content hash and the wallet submits the committee approval.</li>
+              <li>Keep the recovery kit offline throughout voting. Committee members may confirm readiness without receiving its contents.</li>
+              <li>After voting closes, the creator opens the Committee Portal and imports the recovery-kit JSON.</li>
+              <li>The browser validates and encrypts the kit locally, then the creator signs a non-transaction authentication message and releases the ciphertext.</li>
+              <li>Each registered committee member opens the original portal link, authenticates their assigned wallet, and selects <strong>Unlock tally</strong>.</li>
+              <li>The browser decrypts the package locally and independently reconstructs the ballot set. The API never receives the handoff key or plaintext kit.</li>
+              <li>The member reviews the option totals and selects <strong>Publish and approve result</strong>.</li>
               <li>The contract finalizes automatically when matching approvals reach the threshold.</li>
             </ol>
-            <div className="docs-warning"><strong>Privacy boundary</strong><p>Anyone receiving the election private key can decrypt individual ballots. Do not distribute the recovery kit before voting ends. The current transcript hash proves evidence integrity, not cryptographic correctness of decryption; threshold decryption and public correctness proofs remain roadmap work.</p></div>
+            <p>The portal uses <code>/api/v1/committee</code> for public status, one-time wallet challenges, readiness receipts, creator release, committee retrieval, and revocation. It does not use the agent API key. Every privileged request consumes a short-lived challenge and rechecks the signer&apos;s role against BOT Chain.</p>
+            <div className="docs-warning"><strong>Privacy boundary</strong><p>Anyone who obtains both an authorized package and its handoff key can recover the election private key and decrypt individual ballots. Release remains deadline-gated, links should be shared only with the committee, and members must protect decrypted material. The current transcript hash proves evidence integrity, not cryptographic correctness of decryption; threshold decryption and public correctness proofs remain roadmap work.</p></div>
             <h3>Command-line fallback</h3>
             <p>The local tally command remains available when the browser publisher is unavailable. It enforces the same on-chain deadline and key-to-proposal checks.</p>
             <CodeBlock language="bash">{`cd app
@@ -351,6 +355,7 @@ npm run tally`}</CodeBlock>
               <div><code>GET</code><strong>/api/v1/health</strong><span>Check contract, Redis, and FIFO queue readiness.</span></div>
               <div><code>GET</code><strong>/api/v1/proposals</strong><span>List up to 100 recent canonical proposals.</span></div>
               <div><code>GET</code><strong>/api/v1/proposals?proposalId=1</strong><span>Fetch one proposal and its election public key.</span></div>
+              <div><code>GET</code><strong>/api/v1/proposals?proposalCode=CB-XXXX-XXXX</strong><span>Resolve a friendly reference to its canonical on-chain proposal.</span></div>
               <div><code>POST</code><strong>/api/v1/votes</strong><span>Validate, simulate, deduplicate, and enqueue a signed encrypted ballot.</span></div>
               <div><code>GET</code><strong>/api/v1/votes?jobId=cb_...</strong><span>Read queued, processing, submitted, confirmed, retrying, or failed state.</span></div>
               <div><code>GET</code><strong>/api/v1/votes?txHash=0x...</strong><span>Read pending, confirmed, or reverted transaction state.</span></div>
@@ -463,7 +468,9 @@ QSTASH_CURRENT_SIGNING_KEY=<QSTASH_SIGNING_KEY>
 QSTASH_NEXT_SIGNING_KEY=<QSTASH_NEXT_SIGNING_KEY>
 QSTASH_QUEUE_NAME=cipherballot-relayer-v1
 AGENT_RELAY_WORKER_URL=https://www.cipherballot.xyz/api/internal/relay-worker
-AGENT_RELAY_PUBLIC_URL=https://www.cipherballot.xyz`}</CodeBlock>
+AGENT_RELAY_PUBLIC_URL=https://www.cipherballot.xyz
+TALLY_PUBLIC_URL=https://www.cipherballot.xyz
+COMMITTEE_PORTAL_PUBLIC_URL=https://www.cipherballot.xyz`}</CodeBlock>
             <p><code>RELAYER_EXPECTED_ADDRESS</code> prevents an accidental key substitution. <code>AGENT_API_ALLOWED_SIGNERS</code> can restrict a closed pilot to approved voter and agent signing addresses.</p>
           </section>
 

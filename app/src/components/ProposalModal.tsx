@@ -19,6 +19,7 @@ import {
   type ProposalView,
   useEvmWallet,
 } from "../lib/evm";
+import { proposalCode } from "../lib/proposalCode";
 
 export function ProposalModal({
   proposal,
@@ -178,7 +179,7 @@ export function ProposalModal({
           <div className="modal-section" style={{ borderBottom: "1px solid var(--stroke)", paddingBottom: "24px", marginBottom: "24px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: "12px" }}>
               <span className={`pill ${statusColor} glass-panel`}>{proposal.status}</span>
-              <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Proposal #{proposal.id}</span>
+              <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{proposalCode(proposal.id)}</span>
               <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>·</span>
               <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
                 {proposal.privacyMode === "SecretSealed" ? "🔐 Secret Sealed" : "🔄 Commit-Reveal"}

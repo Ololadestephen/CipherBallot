@@ -18,6 +18,7 @@ import {
   type ProposalView,
   useEvmWallet
 } from "../lib/evm";
+import { proposalCode } from "../lib/proposalCode";
 
 export function ProposalCard({
   proposal,
@@ -202,7 +203,7 @@ export function ProposalCard({
       >
         <div className="proposal-card-topline">
           <span className={`pill status-${proposal.status.toLowerCase()}`}>{proposal.status}</span>
-          <span className="proposal-number">Proposal #{proposal.id}</span>
+          <span className="proposal-number">{proposalCode(proposal.id)}</span>
           {proposal.privacyMode === "SecretSealed" && (
             <span className="proposal-mode-chip">Sealed</span>
           )}

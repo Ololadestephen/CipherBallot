@@ -20,6 +20,8 @@ CipherBallot is currently a pre-audit testnet release. See [Security Model](#sec
 - Secret-sealed proposals with locally encrypted, one-action ballots.
 - No readable option totals during the active voting window.
 - Committee threshold approval before a final tally becomes authoritative.
+- A wallet-authenticated committee portal with readiness tracking and ciphertext-only recovery-kit handoff.
+- Friendly deterministic proposal references while retaining canonical sequential on-chain IDs.
 - Optional allowlist-only participation.
 - Commit-reveal voting as a contract-native fallback.
 - Direct wallet voting and three gas-sponsored agent execution modes.
@@ -41,8 +43,10 @@ CipherBallot is currently a pre-audit testnet release. See [Security Model](#sec
 4. A fresh ephemeral ECDH shared secret is derived for that ballot.
 5. The choice is encrypted with AES-256-GCM and bound to the chain ID, contract address, proposal ID, and ballot owner.
 6. The contract records the encrypted ballot commitment and participation count without publishing a readable choice.
-7. After the deadline, committee members import the proposal recovery kit in the Results workspace, which validates and decrypts the ballot set locally and produces a deterministic tally transcript.
-8. Committee members approve the same tally hash on-chain. Finalization occurs only when the configured approval threshold is reached.
+7. The creator shares one committee portal link. Members authenticate their assigned wallets and confirm readiness without receiving the recovery kit.
+8. After the deadline, the creator imports the recovery kit once. The browser validates and encrypts it locally, and only ciphertext is stored in Redis.
+9. Committee members reopen the shared portal, authenticate, decrypt locally, and independently reconstruct the deterministic tally transcript.
+10. Committee members approve the same tally hash on-chain. Finalization occurs only when the configured approval threshold is reached.
 
 The encryption key and approval committee serve different purposes. Encryption protects choices during voting; threshold approval prevents one committee member from unilaterally finalizing a different result.
 
@@ -143,6 +147,7 @@ The **Copy for agent** action creates a public pointer:
   "chainId": "968",
   "contract": "0x3C250cBf439431D7dd8525Ca9800c577a9533e3C",
   "proposalId": "1",
+  "proposalCode": "CB-XXXX-XXXX",
   "voter": "0x..."
 }
 ```
@@ -222,6 +227,7 @@ QSTASH_NEXT_SIGNING_KEY=<SERVER_ONLY_SIGNING_KEY>
 QSTASH_QUEUE_NAME=cipherballot-relayer-v1
 AGENT_RELAY_WORKER_URL=https://www.cipherballot.xyz/api/internal/relay-worker
 AGENT_RELAY_PUBLIC_URL=https://www.cipherballot.xyz
+COMMITTEE_PORTAL_PUBLIC_URL=https://www.cipherballot.xyz
 ```
 
 Never expose the relayer key, agent key, API key, election private key, tally secret, or any wallet private key through a `VITE_` variable.
@@ -264,6 +270,8 @@ cd app
 npm run test:crypto
 npm run test:agent-client
 npm run test:relay-store
+npm run test:tally-transcript
+npm run test:committee-handoff
 ```
 
 Full relay lifecycle on an ephemeral Anvil chain:
