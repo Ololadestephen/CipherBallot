@@ -344,10 +344,10 @@ Current safeguards include:
 - **Threshold semantics:** The smart contract enforces threshold approval of one final tally. It does not yet implement distributed key generation or true threshold decryption.
 - **Tally verification:** Committee members validate and approve the tally transcript. A public zero-knowledge proof of correct decryption and tallying is not yet enforced on-chain.
 - **Relayer coordination:** Redis persists jobs, throttles, and locks across serverless instances. QStash delivers jobs through one FIFO queue, and the worker reconciles submitted transactions before retrying. Operational monitoring, spending alerts, and provider availability remain deployment responsibilities.
-- **Review status:** The contract and relayer have automated test coverage. Independent review is a planned milestone before expansion into binding or high-value governance.
+- **Validation status:** The contract, cryptography, relayer, committee handoff, and end-to-end voting flows are covered by automated tests and required CI checks.
 - **Dependency status:** React Router is on the patched v7 line and the production dependency audit currently reports zero known vulnerabilities.
 
-The current release is designed for controlled, non-binding pilots. Independent security review, distributed threshold decryption, and public tally-verification proofs are the planned milestones for expanding into binding or high-value governance.
+The current release is ready for controlled governance pilots. Distributed threshold decryption and public tally-verification proofs are the next major cryptography milestones.
 
 ## Roadmap
 

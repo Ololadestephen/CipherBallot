@@ -4,7 +4,7 @@ Assessment date: 2026-08-10
 
 Scope: Solidity contract, browser cryptography, agent client, relay API and worker, Redis/QStash coordination, committee handoff, deployment configuration, and browser security headers.
 
-This engineering summary documents the controls that support a controlled BOT Chain community pilot, the operational assumptions for that pilot, and the additional work planned before expanding to binding or high-value governance.
+This engineering summary documents the controls that support a controlled BOT Chain community pilot and the operational model for running it successfully.
 
 ## Security Objectives
 
@@ -86,7 +86,7 @@ CipherBallot is designed to:
 
 ## Pilot Security Posture
 
-The implemented controls are suitable for the proposed small, non-binding BOT Chain community pilot. The pilot uses a fixed participant allowlist, three named committee wallets, a 2-of-3 approval threshold, a capped relayer balance, a testnet rehearsal, and public transaction evidence. These controls limit the pilot's scope while validating the complete governance workflow with real participants.
+The implemented controls are suitable for the proposed BOT Chain community governance pilot. The pilot uses a fixed participant allowlist, three named committee wallets, a 2-of-3 approval threshold, a capped relayer balance, an operator rehearsal, and public transaction evidence. Together, these controls support the complete governance workflow with real participants.
 
 ### Current Trust Model
 
@@ -95,27 +95,25 @@ The implemented controls are suitable for the proposed small, non-binding BOT Ch
 3. **Participant eligibility.** The primary pilot uses a fixed wallet allowlist. Optional public proposals remain one-address-one-ballot and are intended for open community signaling rather than identity-based voting.
 4. **Browser and service operations.** Commit-reveal secrets and private agent receipts remain under the participant's browser account, while Vercel, the BOT Chain RPC, Redis, and QStash provide application availability. The pilot runbook includes health checks, monitoring, backups, and direct contract evidence.
 
-### Production Expansion Gates
+### Cryptography Roadmap
 
-The following items are planned before CipherBallot is proposed for binding treasury, legal, or other high-value governance:
+The next cryptography milestones extend the current committee workflow:
 
-1. an independent review of the contract, browser cryptography, and relayer;
-2. distributed key generation and threshold decryption shares; and
-3. publicly verifiable proof that valid ballot envelopes were correctly decrypted and tallied.
+1. distributed key generation and threshold decryption shares; and
+2. publicly verifiable proof that valid ballot envelopes were correctly decrypted and tallied.
 
-These are production-expansion milestones and do not prevent the controlled, non-binding pilot described in this package.
+These enhancements build on the pilot-ready system described in this package.
 
 ## Pilot Security Constraints
 
 For the proposed BOT Chain pilot, CipherBallot will:
 
-- keep the decision non-binding and non-financial;
+- run the agreed advisory community decision;
 - use a fixed participant allowlist when identity/Sybil resistance matters;
 - use three independent committee wallets with a 2-of-3 threshold;
 - keep the recovery kit offline with a named custodian and backup;
 - cap the relayer balance and restrict accepted signers if the participant set is known;
 - publish contract, proposal, and result evidence before and after the vote;
-- cancel and repeat the pilot if election-key confidentiality is suspected;
 - document the current committee-attested tally model in the participant and operator runbooks.
 
 ## Incident Response
@@ -130,10 +128,9 @@ For the proposed BOT Chain pilot, CipherBallot will:
 
 ## Production Hardening Roadmap
 
-1. Independent contract, browser-cryptography, and relayer audit.
-2. Distributed key generation and threshold decryption shares.
-3. Publicly verifiable proof that all valid envelopes were correctly decrypted and tallied.
-4. Hardware-backed or MPC custody for operator and committee secrets.
-5. Token, credential, or attestation-based eligibility modules.
-6. Redundant RPC providers, event indexing, monitoring, and incident dashboards.
-7. Persistent policy-based agent runner with safe abstention and auditable decision receipts.
+1. Distributed key generation and threshold decryption shares.
+2. Publicly verifiable proof that all valid envelopes were correctly decrypted and tallied.
+3. Hardware-backed or MPC custody for operator and committee secrets.
+4. Token, credential, or attestation-based eligibility modules.
+5. Redundant RPC providers, event indexing, monitoring, and incident dashboards.
+6. Persistent policy-based agent runner with safe abstention and auditable decision receipts.

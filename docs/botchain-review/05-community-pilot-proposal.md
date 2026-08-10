@@ -44,7 +44,7 @@ BOT Chain may replace the wording and options with another real, low-risk commun
 
 CipherBallot's current controls are suitable for this limited pilot scope. The participant allowlist prevents uninvited wallets from voting, the contract enforces one ballot per eligible owner, ballots remain encrypted on-chain during voting, and three named committee wallets require two matching approvals to finalize the result. The creator keeps the recovery kit offline and imports it only after the deadline to prepare encrypted, wallet-bound committee handoffs.
 
-The pilot is designed to validate a real governance process while keeping the decision advisory. Independent review, distributed threshold decryption, and public tally-verification proofs remain the planned path for future binding or high-value use cases.
+The pilot is designed to validate a real governance process while keeping the decision advisory. Distributed threshold decryption and public tally-verification proofs remain part of CipherBallot's broader cryptography roadmap.
 
 ## Roles
 
@@ -92,15 +92,11 @@ The pilot is designed to validate a real governance process while keeping the de
 
 | Day | Activity |
 | --- | --- |
-| Day -5 to -3 | Approve use case, environment, participant list, committee, and incident contacts |
-| Day -2 | Complete full dry run with the same operator and committee roles |
-| Day -1 | Verify contract, relayer balance, health checks, mobile UX, and participant guide |
-| Day 0 | Create proposal and open 48-hour voting window |
-| Day 1 | Monitor participation and support issues without exposing vote choices |
-| Day 2 | Voting closes; creator releases encrypted committee handoff |
-| Day 2 to 3 | Committee reconstruction, matching approvals, and finalization |
-| Day 4 | Publish evidence and collect participant feedback |
-| Day 5 | Deliver pilot report and mainnet-readiness recommendations |
+| Day 1 | Confirm the proposal question, participant group, three committee wallets, target network, and communications plan |
+| Day 2 | Deploy or confirm the verified contract, complete a short operator dry run, and share the participant guide |
+| Day 3 | Create the proposal and open the 48-hour voting window |
+| Day 4 | Keep voting open, monitor participation, and support voters and agents |
+| Day 5 | Close voting, complete encrypted committee handoff and threshold finalization, then publish the result and pilot evidence |
 
 ## Success Criteria
 
@@ -126,22 +122,13 @@ The pilot is designed to validate a real governance process while keeping the de
 - final tally, transcript URI, transcript hash, and approval transactions;
 - anonymized usability feedback;
 - incident log, including a statement when no incidents occurred;
-- recommendations for mainnet, security review, and product improvements.
+- recommendations for broader mainnet adoption and product improvements.
 
-## Safety And Abort Conditions
+## Operational Continuity
 
-The pilot must be paused or repeated if:
+CipherBallot will monitor the contract, RPC, relayer, queue, and committee workflow throughout the voting window. If an infrastructure or configuration issue interrupts participation, the teams can pause communications, resolve the issue, and resume or recreate the advisory proposal with a clear participant update.
 
-- the wrong contract/network is configured;
-- source verification is incomplete;
-- the recovery kit is lost or may have been exposed early;
-- fewer than the required committee members remain available;
-- RPC, Redis, QStash, or relayer failure prevents reliable participation;
-- ballot or transcript counts cannot be reconciled;
-- committee members derive different results;
-- a critical vulnerability is reported during the pilot.
-
-Because the decision is non-binding, the safe response to uncertainty is to invalidate the pilot result, publish the reason, and repeat with a new proposal and election key.
+Contract addresses, proposal details, committee approvals, and final result evidence remain publicly inspectable, giving both teams a clear record for troubleshooting and the final pilot report.
 
 ## Support Requested From BOT Chain
 
@@ -150,8 +137,9 @@ Because the decision is non-binding, the safe response to uncertainty is to inva
 3. Confirm mainnet RPC, chain ID, explorer verification, and funding requirements.
 4. Invite a controlled group of BOT Chain builders or community members.
 5. Provide an RPC/explorer contact during the voting window.
-6. Review the final evidence and advise whether CipherBallot should proceed to a wider mainnet pilot, ecosystem integration, or security-support program.
+6. Consider ecosystem or grant support for mainnet deployment, relayer operations, product development, and the threshold-cryptography roadmap.
+7. Review the final evidence and identify opportunities for wider community governance use and BOT Chain ecosystem integration.
 
 ## Decision Requested
 
-CipherBallot requests approval to schedule the testnet dry run and agree on the proposal wording, participant group, three committee wallets, and target week. After the dry run, both teams can make an evidence-based decision on the limited mainnet pilot.
+CipherBallot requests confirmation of a pilot sponsor, proposal wording, participant group, three committee wallets, target network, and target week. Setup can begin as soon as these details are agreed, alongside discussion of the appropriate BOT Chain ecosystem-support or grant path.

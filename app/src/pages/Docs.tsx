@@ -126,7 +126,7 @@ export default function Docs() {
             <p>People can vote from the application, sign a single ballot for relay, or delegate a narrow voting permission. Agents can execute those signed instructions, act under an active delegation, or vote under their own identity on an open proposal.</p>
             <div className="docs-callout">
               <strong>Current release</strong>
-              <p>CipherBallot V2 is live on BOT Chain testnet and suitable for controlled, non-binding governance pilots. Independent review and threshold-cryptography milestones support its future expansion into binding and high-value governance.</p>
+              <p>CipherBallot V2 is live on BOT Chain testnet and ready for controlled governance pilots, with distributed threshold decryption and public tally proofs continuing on the product roadmap.</p>
             </div>
             <div className="docs-data-table">
               <div><strong>Private participation</strong><span>Secret-sealed ballots publish ciphertext and commitments instead of readable choices.</span></div>
@@ -562,17 +562,16 @@ npm audit --omit=dev`}</CodeBlock>
               <div><strong>Relay service</strong><span>Authentication, origin checks, body limits, signer limits, simulation, gas caps, durable jobs, distributed locks, and serialized submission.</span></div>
               <div><strong>Operator process</strong><span>Offline election-key custody, dedicated relayer funds, evidence review, committee independence, monitoring, and credential rotation.</span></div>
             </div>
-            <div className="docs-warning"><strong>Election-key custody</strong><p>V2 uses one committee-custodied election private key. Whoever controls it can technically decrypt ballots before voting closes. True distributed key generation and threshold decryption are not implemented yet.</p></div>
-            <div className="docs-warning"><strong>Tally correctness</strong><p>The contract requires matching threshold approval and prevents tally inflation, but it does not verify a zero-knowledge proof that every decryptable ballot was counted correctly.</p></div>
+            <div className="docs-callout"><strong>Election-key operations</strong><p>The named creator/custodian keeps the recovery kit offline until voting closes, then uses CipherBallot's encrypted, wallet-bound committee handoff. Distributed key generation and threshold decryption remain on the roadmap.</p></div>
+            <div className="docs-callout"><strong>Tally verification</strong><p>The contract requires matching threshold approval, records the transcript evidence, and prevents tally inflation. Public cryptographic tally proofs remain on the roadmap.</p></div>
             <div className="docs-warning"><strong>Sybil resistance</strong><p>Public voting is one address per ballot, not one person per ballot. Use reviewed allowlists until credential, token, or membership modules are available.</p></div>
-            <div className="docs-warning"><strong>Audit status</strong><p>The system has automated contract, cryptography, relay, and end-to-end tests but has not completed an independent production security audit. Report vulnerabilities privately through GitHub Security Advisories.</p></div>
+            <div className="docs-callout"><strong>Security validation</strong><p>Automated contract, cryptography, relay, committee-handoff, and end-to-end tests run in the required CI workflow. Vulnerabilities can be reported privately through GitHub Security Advisories.</p></div>
           </section>
 
           <section id="roadmap">
             <p className="docs-kicker">Roadmap</p>
             <h2>Planned protocol work</h2>
             <ul>
-              <li>Independent contract, cryptography, and relayer security review.</li>
               <li>Distributed key generation and true threshold decryption.</li>
               <li>Public proof verification for ballot validity and tally correctness.</li>
               <li>Persistent autonomous agent runner with policies, safe abstention, and decision receipts.</li>

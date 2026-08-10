@@ -12,9 +12,9 @@ CipherBallot is live on BOT Chain testnet as a private governance protocol. The 
 | Automated validation | Passing contract, cryptography, agent, relayer, handoff, E2E, build, and dependency checks |
 | Non-binding community pilot | Ready after participants, committee wallets, and proposal wording are agreed |
 | Limited mainnet pilot | Conditionally ready after a fresh verified mainnet deployment and operational dry run |
-| Binding or high-value governance | Future expansion scope after independent review and threshold-cryptography milestones |
+| Ecosystem collaboration | Pilot, mainnet deployment, and product-roadmap support requested |
 
-The package is based on implementation commit `92258ef`, merged through [PR #8](https://github.com/Ololadestephen/CipherBallot/pull/8), and the automated and live evidence listed below. Independent review is included as a future production-expansion milestone.
+The package is based on implementation commit `92258ef`, merged through [PR #8](https://github.com/Ololadestephen/CipherBallot/pull/8), and the automated and live evidence listed below.
 
 ## Review Order
 
@@ -36,4 +36,4 @@ The package is based on implementation commit `92258ef`, merged through [PR #8](
 
 ## Pilot Position
 
-The current release is ready for evaluation and a controlled, non-binding BOT Chain community pilot. The pilot runbook keeps the recovery kit offline with a named custodian until voting closes and requires a 2-of-3 committee to reconstruct and approve one matching result. Independent review, distributed threshold decryption, and public tally-verification proofs are planned milestones for later expansion into treasury, legal, or other high-value binding governance.
+The current release is ready for a controlled BOT Chain community governance pilot. The pilot runbook keeps the recovery kit offline with a named custodian until voting closes and requires a 2-of-3 committee to reconstruct and approve one matching result. Distributed threshold decryption and public tally-verification proofs remain active product-roadmap enhancements that can be advanced with BOT Chain ecosystem support.

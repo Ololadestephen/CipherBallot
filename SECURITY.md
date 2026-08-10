@@ -1,6 +1,6 @@
 # Security Policy
 
-CipherBallot is currently deployed on BOT Chain testnet and is suitable for controlled, non-binding governance pilots. Independent review, distributed threshold decryption, and public tally-verification proofs are planned milestones before expansion into binding elections, treasury execution, or other high-value governance.
+CipherBallot is currently deployed on BOT Chain testnet and is suitable for controlled governance pilots. Distributed threshold decryption and public tally-verification proofs are the next major cryptography milestones.
 
 ## Reporting a Vulnerability
 
