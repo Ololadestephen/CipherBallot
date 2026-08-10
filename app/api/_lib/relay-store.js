@@ -5,6 +5,7 @@ import { CHAIN_ID, CONTRACT_ADDRESS } from "./cipherballot.js";
 const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TALLY_TTL_SECONDS = 365 * 24 * 60 * 60;
 const LOCK_TTL_SECONDS = 90;
+const TALLY_STORAGE_FORMAT = "cipherballot-tally-storage-v1";
 const memoryValues = new Map();
 let redis;
 
@@ -180,20 +181,36 @@ export async function consumeRateLimit(scope, identity, limit, windowSeconds = 6
   };
 }
 
+export function normalizeStoredTallyTranscript(value) {
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed?.format === TALLY_STORAGE_FORMAT && typeof parsed.transcript === "string") return parsed.transcript;
+    } catch {
+      // A stored transcript is already the exact string needed for hash verification.
+    }
+    return value;
+  }
+  if (value?.format === TALLY_STORAGE_FORMAT && typeof value.transcript === "string") return value.transcript;
+  if (value && typeof value === "object" && !Array.isArray(value)) return JSON.stringify(value);
+  return null;
+}
+
 export async function saveTallyTranscript(transcriptHash, transcript) {
   const key = storeKey("tally", transcriptHash.toLowerCase());
+  const storedValue = { format: TALLY_STORAGE_FORMAT, transcript };
   if (localMemoryEnabled()) {
-    memoryWrite(key, transcript, TALLY_TTL_SECONDS, true);
-    return memoryRead(key);
+    memoryWrite(key, storedValue, TALLY_TTL_SECONDS, true);
+    return normalizeStoredTallyTranscript(memoryRead(key));
   }
-  await getRedis().set(key, transcript, { nx: true, ex: TALLY_TTL_SECONDS });
-  return getRedis().get(key);
+  await getRedis().set(key, storedValue, { nx: true, ex: TALLY_TTL_SECONDS });
+  return normalizeStoredTallyTranscript(await getRedis().get(key));
 }
 
 export async function getTallyTranscript(transcriptHash) {
   const key = storeKey("tally", transcriptHash.toLowerCase());
-  if (localMemoryEnabled()) return memoryRead(key);
-  return getRedis().get(key);
+  if (localMemoryEnabled()) return normalizeStoredTallyTranscript(memoryRead(key));
+  return normalizeStoredTallyTranscript(await getRedis().get(key));
 }
 
 export function isLocalInlineRelay() {
