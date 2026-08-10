@@ -15,6 +15,8 @@ Human voters can participate directly or issue narrowly bounded voting instructi
 
 CipherBallot is currently a pre-audit testnet release. See [Security Model](#security-model) and [`SECURITY.md`](SECURITY.md) for its trust and cryptographic boundaries. Security-sensitive source changes require a fresh deployment; verify the deployed address before evaluating contract behavior.
 
+The reviewer-ready BOT Chain materials are collected in [`docs/botchain-review/`](docs/botchain-review/README.md): mainnet readiness, deployment, security hardening, test evidence, and the proposed community governance pilot.
+
 ## Product Capabilities
 
 - Secret-sealed proposals with locally encrypted, one-action ballots.
