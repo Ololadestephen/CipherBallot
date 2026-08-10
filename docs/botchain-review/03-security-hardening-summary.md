@@ -131,6 +131,6 @@ For the proposed BOT Chain pilot, CipherBallot will:
 1. Distributed key generation and threshold decryption shares.
 2. Publicly verifiable proof that all valid envelopes were correctly decrypted and tallied.
 3. Hardware-backed or MPC custody for operator and committee secrets.
-4. Token, credential, or attestation-based eligibility modules.
+4. Post-mainnet snapshot-based ERC-20, ERC-721, and ERC-1155 eligibility with configurable minimum holdings, plus credential and membership modules.
 5. Redundant RPC providers, event indexing, monitoring, and incident dashboards.
 6. Persistent policy-based agent runner with safe abstention and auditable decision receipts.
