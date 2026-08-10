@@ -575,7 +575,7 @@ npm audit --omit=dev`}</CodeBlock>
               <li>Distributed key generation and true threshold decryption.</li>
               <li>Public proof verification for ballot validity and tally correctness.</li>
               <li>Persistent autonomous agent runner with policies, safe abstention, and decision receipts.</li>
-              <li>Token, NFT, credential, and community membership eligibility modules.</li>
+              <li>Post-mainnet snapshot-based ERC-20, ERC-721, and ERC-1155 eligibility with configurable minimum holdings and one vote per eligible wallet.</li>
               <li>Event indexing, notifications, governance analytics, and richer audit history.</li>
               <li>Account abstraction, broader sponsorship controls, and mainnet community pilots.</li>
             </ul>
