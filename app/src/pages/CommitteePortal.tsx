@@ -50,17 +50,24 @@ export default function CommitteePortal() {
   const [handoffKey, setHandoffKey] = useState(handoffKeyFromHash);
   const [preparedTally, setPreparedTally] = useState<PreparedThresholdTally | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessLoading, setAccessLoading] = useState(true);
+  const [accessError, setAccessError] = useState("");
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
-    const proposals = await fetchProposals();
-    const matches = proposals.filter((item) => proposalMatchesCode(item, code));
-    if (matches.length > 1) throw new Error("This short proposal code is ambiguous. Use the canonical proposal link instead.");
-    const selected = matches[0] || null;
-    setProposal(selected);
-    if (selected) setPortalStatus(await fetchCommitteePortalStatus(selected.id));
-    setLoading(false);
+    setLoading(true);
+    setAccessLoading(true);
+    setPortalStatus(null);
+    setCommitteeStatus({ isMember: false, hasApproved: false });
+    try {
+      const proposals = await fetchProposals();
+      const matches = proposals.filter((item) => proposalMatchesCode(item, code));
+      if (matches.length > 1) throw new Error("This short proposal code is ambiguous. Use the canonical proposal link instead.");
+      setProposal(matches[0] || null);
+    } finally {
+      setLoading(false);
+    }
   }, [code]);
 
   useEffect(() => {
@@ -74,12 +81,42 @@ export default function CommitteePortal() {
   useEffect(() => {
     if (!proposal || !wallet.account) {
       setCommitteeStatus({ isMember: false, hasApproved: false });
+      setPortalStatus(null);
+      setAccessError("");
+      setAccessLoading(false);
       return;
     }
-    void checkCommitteeStatus(proposal.id, wallet.account).then(setCommitteeStatus);
-  }, [proposal, wallet.account, portalStatus]);
+    let cancelled = false;
+    const creatorMatches = proposal.creator.toLowerCase() === wallet.account.toLowerCase();
+    setAccessLoading(true);
+    setAccessError("");
+    void checkCommitteeStatus(proposal.id, wallet.account)
+      .then(async (status) => {
+        if (cancelled) return;
+        setCommitteeStatus(status);
+        if (!creatorMatches && !status.isMember) {
+          setPortalStatus(null);
+          return;
+        }
+        const nextPortalStatus = await fetchCommitteePortalStatus(proposal.id);
+        if (!cancelled) setPortalStatus(nextPortalStatus);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setCommitteeStatus({ isMember: false, hasApproved: false });
+        setPortalStatus(null);
+        setAccessError(friendlyEvmError(error, "Unable to verify portal access on BOT Chain."));
+      })
+      .finally(() => {
+        if (!cancelled) setAccessLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [proposal, wallet.account]);
 
   const isCreator = Boolean(proposal && wallet.account && proposal.creator.toLowerCase() === wallet.account.toLowerCase());
+  const canAccessPortal = isCreator || committeeStatus.isMember;
   const isReady = Boolean(wallet.account && portalStatus?.ready.some((item) => item.address.toLowerCase() === wallet.account.toLowerCase()));
   const isRetrieved = Boolean(wallet.account && portalStatus?.retrieved.some((item) => item.address.toLowerCase() === wallet.account.toLowerCase()));
   const votingClosed = proposal?.status === "Tallying" || proposal?.status === "Finalized";
@@ -89,7 +126,7 @@ export default function CommitteePortal() {
   }, [proposal, handoffKey]);
 
   const refreshStatus = async () => {
-    if (!proposal) return;
+    if (!proposal || !canAccessPortal) return;
     setPortalStatus(await fetchCommitteePortalStatus(proposal.id));
   };
 
@@ -200,6 +237,31 @@ export default function CommitteePortal() {
 
   if (loading) return <div className="loading-state app-loading-state">Loading committee portal...</div>;
   if (!proposal) return <div className="app-empty-state"><strong>Committee portal not found</strong><p>The proposal code is invalid for this deployment.</p><Link to="/voters">View proposals</Link></div>;
+  if (!wallet.connected) {
+    return (
+      <section className="app-page committee-portal-page">
+        <PageHeader title="Restricted committee workspace" description="Connect the proposal creator or an assigned committee wallet to continue." />
+        <div className="committee-action-panel committee-access-panel">
+          <ShieldCheck size={22} />
+          <div><strong>Wallet verification required</strong><p>Portal details remain hidden until CipherBallot confirms your role directly from the deployed contract.</p></div>
+          <button className="cta" disabled={wallet.connecting} onClick={() => void wallet.connect()}>{wallet.connecting ? "Connecting..." : "Connect wallet"}</button>
+        </div>
+      </section>
+    );
+  }
+  if (accessLoading) return <div className="loading-state app-loading-state">Verifying committee access...</div>;
+  if (!canAccessPortal) {
+    return (
+      <section className="app-page committee-portal-page">
+        <PageHeader title="Restricted committee workspace" description="This workspace is available only to the proposal creator and its assigned committee." />
+        <div className="committee-action-panel committee-access-panel">
+          <ShieldCheck size={22} />
+          <div><strong>Access not granted</strong><p>{accessError || "The connected wallet is not assigned to this committee workspace."}</p></div>
+          <Link className="secondary-cta" to="/voters">View proposals</Link>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="app-page committee-portal-page">
@@ -216,10 +278,7 @@ export default function CommitteePortal() {
         <button className="icon-button" title="Refresh committee status" aria-label="Refresh committee status" onClick={() => void refreshStatus()}><RefreshCw size={16} /></button>
       </div>
 
-      {!wallet.connected ? (
-        <div className="committee-action-panel"><ShieldCheck size={22} /><div><strong>Connect a committee or creator wallet</strong><p>The portal reads your role directly from the deployed contract.</p></div></div>
-      ) : (
-        <div className="committee-portal-grid">
+      <div className="committee-portal-grid">
           {committeeStatus.isMember && (
             <section className="committee-role-section">
               <div className="committee-section-heading"><span>Committee member</span><strong>{shortAddress(wallet.account)}</strong></div>
@@ -271,11 +330,7 @@ export default function CommitteePortal() {
             </section>
           )}
 
-          {!committeeStatus.isMember && !isCreator && (
-            <div className="committee-action-panel"><ShieldCheck size={22} /><div><strong>Wallet is not assigned to this portal</strong><p>Connect the proposal creator or one of its on-chain committee wallets.</p></div></div>
-          )}
-        </div>
-      )}
+      </div>
 
       {message && <div className="feedback-msg">{message}</div>}
       <div className="committee-portal-footer"><Link to={`/proposal/${proposal.id}`}>Open proposal</Link><Link to={`/results?proposal=${proposal.id}`}>View result record</Link></div>

@@ -32,7 +32,7 @@ export default function Results() {
   const [selected, setSelected] = useState<ProposalView | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [committeeStatus, setCommitteeStatus] = useState({ isMember: false, hasApproved: false });
+  const [committeeStatus, setCommitteeStatus] = useState({ proposalId: null as number | null, isMember: false, hasApproved: false });
   const [tallyRaw, setTallyRaw] = useState("");
   const [tallyURI, setTallyURI] = useState("");
   const [tallyProofHash, setTallyProofHash] = useState("");
@@ -66,10 +66,19 @@ export default function Results() {
 
   useEffect(() => {
     if (!selectedId || !wallet.account) {
-      setCommitteeStatus({ isMember: false, hasApproved: false });
+      setCommitteeStatus({ proposalId: null, isMember: false, hasApproved: false });
       return;
     }
-    void checkCommitteeStatus(selectedId, wallet.account).then(setCommitteeStatus);
+    let cancelled = false;
+    setCommitteeStatus({ proposalId: null, isMember: false, hasApproved: false });
+    void checkCommitteeStatus(selectedId, wallet.account).then((status) => {
+      if (!cancelled) setCommitteeStatus({ proposalId: selectedId, ...status });
+    }).catch(() => {
+      if (!cancelled) setCommitteeStatus({ proposalId: null, isMember: false, hasApproved: false });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedId, wallet.account, rows]);
 
   useEffect(() => {
@@ -78,6 +87,14 @@ export default function Results() {
   }, [selectedId]);
 
   const totalVotes = useMemo(() => selected?.finalTally.reduce((sum, item) => sum + item, 0) ?? 0, [selected]);
+  const isSelectedCommitteeMember = Boolean(
+    selected && committeeStatus.proposalId === selected.id && committeeStatus.isMember
+  );
+  const canOpenCommitteePortal = Boolean(
+    selected
+    && wallet.account
+    && (isSelectedCommitteeMember || selected.creator.toLowerCase() === wallet.account.toLowerCase())
+  );
 
   const handleFinalize = async () => {
     if (!selected) return;
@@ -259,7 +276,7 @@ export default function Results() {
               </div>
               <span className="tally-deadline-state"><ShieldCheck size={15} /> Voting closed</span>
             </div>
-            {committeeStatus.isMember ? (
+            {isSelectedCommitteeMember ? (
               committeeStatus.hasApproved ? (
                 <div className="tally-complete-state"><FileCheck2 size={18} /><span>Your wallet has already approved this proposal's tally.</span></div>
               ) : (
@@ -345,7 +362,7 @@ export default function Results() {
           </div>
         )}
 
-        {selected.privacyMode === "SecretSealed" && (
+        {selected.privacyMode === "SecretSealed" && canOpenCommitteePortal && (
           <div className="result-action-row">
             <Link className="secondary-cta" to={committeePortalPath(selected.id)}>Open committee portal</Link>
           </div>

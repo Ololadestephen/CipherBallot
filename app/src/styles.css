@@ -5361,8 +5361,15 @@ select.input,
   overflow-wrap: anywhere;
 }
 
+.committee-summary-band strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .committee-summary-band small {
   color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .committee-summary-band > .icon-button {
@@ -5391,12 +5398,15 @@ select.input,
 
 .committee-section-heading span {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 11px;
+  line-height: 1.4;
   text-transform: uppercase;
 }
 
 .committee-section-heading strong {
   font-family: var(--font-heading);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .committee-action-panel {
@@ -5421,12 +5431,19 @@ select.input,
 .committee-action-panel strong {
   display: block;
   margin-bottom: 5px;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .committee-action-panel p {
   margin: 0;
   color: var(--text-secondary);
+  font-size: 13px;
   line-height: 1.55;
+}
+
+.committee-access-panel {
+  margin-top: 28px;
 }
 
 .committee-complete-line {
@@ -5434,6 +5451,7 @@ select.input,
   align-items: center;
   gap: 9px;
   color: var(--primary);
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -5448,6 +5466,7 @@ select.input,
   gap: 18px;
   padding: 24px 0;
   color: var(--secondary);
+  font-size: 13px;
   font-weight: 700;
 }
 
