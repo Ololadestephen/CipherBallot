@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { BrowserProvider, Contract, JsonRpcProvider, ZeroHash, getAddress, hexlify, id, keccak256, randomBytes, toUtf8Bytes } from "ethers";
-import { encryptBallotEnvelope } from "./ballotEncryption";
+import { BrowserProvider, Contract, Interface, JsonRpcProvider, SigningKey, ZeroHash, getAddress, hexlify, id, isHexString, keccak256, randomBytes, toUtf8Bytes } from "ethers";
+import { decryptBallotEnvelope, encryptedBallotProofHash, encryptBallotEnvelope } from "./ballotEncryption";
 
 declare global {
   interface Window {
@@ -26,6 +26,7 @@ export const BOT_CHAIN = {
 };
 
 export const CONTRACT_ADDRESS = (import.meta.env.VITE_CIPHERBALLOT_CONTRACT_ADDRESS || "").trim();
+export const CONTRACT_DEPLOYMENT_BLOCK = Number(import.meta.env.VITE_CIPHERBALLOT_DEPLOYMENT_BLOCK || 19_063_989);
 
 export const ALREADY_VOTED_MESSAGE = "This wallet has already voted on this proposal. A ballot submitted by an authorized agent also uses the voter's single vote.";
 
@@ -194,6 +195,33 @@ export type ProofStats = {
   revealCount: number;
   tallyingCount: number;
   finalizedCount: number;
+};
+
+export type TallyTranscriptBallot = {
+  transactionHash: string;
+  voter: string;
+  privateBallotHash: string;
+  ballotProofHash: string;
+};
+
+export type TallyTranscript = {
+  version: "cipherballot-tally-transcript-v1";
+  chainId: number;
+  contractAddress: string;
+  proposalId: number;
+  title: string;
+  options: string[];
+  finalTally: number[];
+  ballotCount: number;
+  ballots: TallyTranscriptBallot[];
+};
+
+export type PreparedThresholdTally = {
+  finalTally: bigint[];
+  transcript: TallyTranscript;
+  transcriptJson: string;
+  transcriptHash: string;
+  tallySecret: string;
 };
 
 type WalletContext = {
@@ -542,6 +570,160 @@ export async function fetchProposals(): Promise<ProposalView[]> {
 export async function fetchProposal(id: number): Promise<ProposalView | null> {
   const rows = await fetchProposals();
   return rows.find((row) => row.id === id) ?? null;
+}
+
+type RecoveryKitInput = {
+  electionPrivateKey: string;
+  committeeTallySecret: string;
+};
+
+function normalizeRecoveryKit(value: unknown): RecoveryKitInput {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Recovery kit must contain a JSON object.");
+  const kit = value as Record<string, unknown>;
+  const electionPrivateKey = String(kit.electionPrivateKey || "").trim();
+  const committeeTallySecret = String(kit.committeeTallySecret || "").trim();
+  if (!isHexString(electionPrivateKey, 32)) throw new Error("Recovery kit does not contain a valid election private key.");
+  if (!isHexString(committeeTallySecret, 32)) throw new Error("Recovery kit does not contain a valid committee tally secret.");
+  if (kit.format !== "cipherballot-election-recovery-v1") throw new Error("This file is not a supported CipherBallot recovery kit.");
+  return { electionPrivateKey, committeeTallySecret };
+}
+
+export async function prepareThresholdTally(proposal: ProposalView, recoveryKit: unknown): Promise<PreparedThresholdTally> {
+  if (proposal.privacyMode !== "SecretSealed") throw new Error("This proposal does not use encrypted threshold tallying.");
+  if (proposal.finalized) throw new Error("This proposal has already been finalized.");
+  if (!CONTRACT_ADDRESS || !isHexString(proposal.encryptionPublicKey, 65)) {
+    throw new Error("The configured contract does not expose a valid election public key.");
+  }
+  if (!Number.isSafeInteger(CONTRACT_DEPLOYMENT_BLOCK) || CONTRACT_DEPLOYMENT_BLOCK < 0) {
+    throw new Error("The configured contract deployment block is invalid.");
+  }
+
+  const { electionPrivateKey, committeeTallySecret } = normalizeRecoveryKit(recoveryKit);
+  let derivedPublicKey: string;
+  try {
+    derivedPublicKey = new SigningKey(electionPrivateKey).publicKey;
+  } catch {
+    throw new Error("Recovery kit election private key is invalid.");
+  }
+  if (derivedPublicKey.toLowerCase() !== proposal.encryptionPublicKey.toLowerCase()) {
+    throw new Error("This recovery kit does not belong to the selected proposal.");
+  }
+  if (keccak256(toUtf8Bytes(committeeTallySecret)).toLowerCase() !== proposal.tallySecretCommitment.toLowerCase()) {
+    throw new Error("Recovery kit tally secret does not match the proposal commitment.");
+  }
+
+  const provider = getReadonlyProvider();
+  const latestBlock = await provider.getBlock("latest");
+  if (!latestBlock) throw new Error("Unable to read the latest BOT Chain block.");
+  if (latestBlock.timestamp <= proposal.endTs) {
+    throw new Error(`Ballot recovery is locked until voting ends at ${formatDateTime(proposal.endTs)}.`);
+  }
+
+  const contract = getReadonlyContract();
+  if (!contract) throw new Error("CipherBallot contract is not configured.");
+  const events = await contract.queryFilter(
+    contract.filters.PrivateBallotSubmitted(proposal.id),
+    CONTRACT_DEPLOYMENT_BLOCK,
+    latestBlock.number
+  );
+  if (events.length !== proposal.votesCast) {
+    throw new Error(`Found ${events.length} ballot events, but the contract records ${proposal.votesCast}. Tally preparation stopped.`);
+  }
+
+  const iface = new Interface(CIPHERBALLOT_ABI);
+  const allowedMethods = new Set([
+    "submitPrivateBallot",
+    "submitPrivateBallotByAgent",
+    "submitPrivateBallotByVoterSignature",
+    "submitPublicAgentBallot"
+  ]);
+  const sortedEvents = [...events].sort((left, right) =>
+    left.blockNumber === right.blockNumber ? left.index - right.index : left.blockNumber - right.blockNumber
+  );
+  const finalTally = Array.from({ length: proposal.options.length }, () => 0);
+  const ballots: TallyTranscriptBallot[] = [];
+  const seenVoters = new Set<string>();
+
+  for (const event of sortedEvents) {
+    if (!("args" in event)) throw new Error(`Ballot event ${event.transactionHash} could not be decoded.`);
+    const args = event.args as unknown as {
+      voter: string;
+      privateBallotHash: string;
+      ballotProofHash: string;
+    };
+    const transaction = await provider.getTransaction(event.transactionHash);
+    if (!transaction || !transaction.to || getAddress(transaction.to) !== getAddress(CONTRACT_ADDRESS)) {
+      throw new Error(`Ballot transaction ${event.transactionHash} does not call the configured contract.`);
+    }
+    const parsed = iface.parseTransaction({ data: transaction.data, value: transaction.value });
+    if (!parsed || !allowedMethods.has(parsed.name)) {
+      throw new Error(`Ballot transaction ${event.transactionHash} uses an unexpected contract method.`);
+    }
+
+    const privateBallot = String(parsed.args.privateBallot);
+    const submittedProofHash = String(parsed.args.ballotProofHash);
+    const voter = getAddress(args.voter);
+    if (seenVoters.has(voter)) throw new Error(`Duplicate ballot owner found in transaction ${event.transactionHash}.`);
+    seenVoters.add(voter);
+    if (keccak256(privateBallot).toLowerCase() !== String(args.privateBallotHash).toLowerCase()) {
+      throw new Error(`Encrypted ballot hash mismatch in transaction ${event.transactionHash}.`);
+    }
+    if (submittedProofHash.toLowerCase() !== String(args.ballotProofHash).toLowerCase()) {
+      throw new Error(`Ballot event proof mismatch in transaction ${event.transactionHash}.`);
+    }
+    if (encryptedBallotProofHash(privateBallot).toLowerCase() !== submittedProofHash.toLowerCase()) {
+      throw new Error(`Encrypted ballot proof mismatch in transaction ${event.transactionHash}.`);
+    }
+
+    const ballot = await decryptBallotEnvelope({
+      privateBallot,
+      electionPrivateKey,
+      proposalId: proposal.id,
+      chainId: BOT_CHAIN.chainId,
+      contractAddress: CONTRACT_ADDRESS
+    });
+    if (getAddress(ballot.voter) !== voter) throw new Error(`Decrypted voter mismatch in transaction ${event.transactionHash}.`);
+    if (ballot.optionIndex >= finalTally.length) throw new Error(`Decrypted option is invalid in transaction ${event.transactionHash}.`);
+
+    finalTally[ballot.optionIndex] += 1;
+    ballots.push({
+      transactionHash: event.transactionHash,
+      voter,
+      privateBallotHash: String(args.privateBallotHash),
+      ballotProofHash: submittedProofHash
+    });
+  }
+
+  const transcript: TallyTranscript = {
+    version: "cipherballot-tally-transcript-v1",
+    chainId: BOT_CHAIN.chainId,
+    contractAddress: getAddress(CONTRACT_ADDRESS),
+    proposalId: proposal.id,
+    title: proposal.title,
+    options: [...proposal.options],
+    finalTally,
+    ballotCount: ballots.length,
+    ballots
+  };
+  const transcriptJson = JSON.stringify(transcript);
+  return {
+    finalTally: finalTally.map((value) => BigInt(value)),
+    transcript,
+    transcriptJson,
+    transcriptHash: keccak256(toUtf8Bytes(transcriptJson)),
+    tallySecret: committeeTallySecret
+  };
+}
+
+export async function publishTallyTranscript(prepared: PreparedThresholdTally): Promise<string> {
+  const response = await fetch("/api/v1/tallies", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transcript: prepared.transcriptJson, transcriptHash: prepared.transcriptHash })
+  });
+  const payload = await response.json().catch(() => ({})) as { uri?: string; error?: string };
+  if (!response.ok || !payload.uri) throw new Error(payload.error || "Unable to publish the tally transcript.");
+  return payload.uri;
 }
 
 export async function fetchProofStats(): Promise<ProofStats> {

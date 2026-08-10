@@ -41,7 +41,7 @@ CipherBallot is currently a pre-audit testnet release. See [Security Model](#sec
 4. A fresh ephemeral ECDH shared secret is derived for that ballot.
 5. The choice is encrypted with AES-256-GCM and bound to the chain ID, contract address, proposal ID, and ballot owner.
 6. The contract records the encrypted ballot commitment and participation count without publishing a readable choice.
-7. After the deadline, committee tooling validates and decrypts the ballot set, then produces a tally transcript.
+7. After the deadline, committee members import the proposal recovery kit in the Results workspace, which validates and decrypts the ballot set locally and produces a deterministic tally transcript.
 8. Committee members approve the same tally hash on-chain. Finalization occurs only when the configured approval threshold is reached.
 
 The encryption key and approval committee serve different purposes. Encryption protects choices during voting; threshold approval prevents one committee member from unilaterally finalizing a different result.

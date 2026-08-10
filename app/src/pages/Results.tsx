@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download, FileCheck2, ShieldCheck, Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -10,7 +10,10 @@ import {
   finalizeProposal,
   friendlyEvmError,
   formatDateTime,
+  prepareThresholdTally,
+  publishTallyTranscript,
   shortAddress,
+  type PreparedThresholdTally,
   type ProposalView,
   useEvmWallet
 } from "../lib/evm";
@@ -33,6 +36,9 @@ export default function Results() {
   const [tallyURI, setTallyURI] = useState("");
   const [tallyProofHash, setTallyProofHash] = useState("");
   const [tallySecret, setTallySecret] = useState("");
+  const [preparedTally, setPreparedTally] = useState<PreparedThresholdTally | null>(null);
+  const [preparingTally, setPreparingTally] = useState(false);
+  const [publishingTally, setPublishingTally] = useState(false);
 
   const loadResults = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -64,6 +70,11 @@ export default function Results() {
     }
     void checkCommitteeStatus(selectedId, wallet.account).then(setCommitteeStatus);
   }, [selectedId, wallet.account, rows]);
+
+  useEffect(() => {
+    setPreparedTally(null);
+    setTallySecret("");
+  }, [selectedId]);
 
   const totalVotes = useMemo(() => selected?.finalTally.reduce((sum, item) => sum + item, 0) ?? 0, [selected]);
 
@@ -111,6 +122,68 @@ export default function Results() {
       await loadResults(false);
     } catch (err) {
       setMessage(friendlyEvmError(err, "Tally approval failed."));
+    }
+  };
+
+  const handleRecoveryKit = async (file: File | undefined) => {
+    if (!selected || !file) return;
+    if (file.size > 32_768) return setMessage("Recovery kit exceeds the 32 KB safety limit.");
+    setPreparingTally(true);
+    setPreparedTally(null);
+    setMessage("Validating recovery kit and reconstructing the on-chain ballot set...");
+    try {
+      const kit = JSON.parse(await file.text()) as unknown;
+      const prepared = await prepareThresholdTally(selected, kit);
+      setPreparedTally(prepared);
+      setTallyRaw(prepared.transcript.finalTally.join(","));
+      setTallyProofHash(prepared.transcriptHash);
+      setTallySecret(prepared.tallySecret);
+      setMessage(`Tally prepared locally from ${prepared.transcript.ballotCount} authenticated ballot${prepared.transcript.ballotCount === 1 ? "" : "s"}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to prepare the tally from this recovery kit.");
+    } finally {
+      setPreparingTally(false);
+    }
+  };
+
+  const downloadTranscript = () => {
+    if (!selected || !preparedTally) return;
+    const blob = new Blob([preparedTally.transcriptJson], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cipherballot-proposal-${selected.id}-tally-${preparedTally.transcriptHash.slice(2, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const handlePublishAndApprove = async () => {
+    if (!selected || !preparedTally) return;
+    setPublishingTally(true);
+    try {
+      setMessage("Publishing the public tally transcript...");
+      const uri = await publishTallyTranscript(preparedTally);
+      setTallyURI(uri);
+      setMessage("Confirm the committee tally approval in your wallet...");
+      const contract = await wallet.getSignerContract();
+      await approveThresholdTally(
+        contract,
+        selected.id,
+        preparedTally.finalTally,
+        uri,
+        preparedTally.transcriptHash,
+        preparedTally.tallySecret
+      );
+      setTallySecret("");
+      setPreparedTally(null);
+      setMessage("Tally evidence published and committee approval recorded.");
+      await loadResults(false);
+    } catch (error) {
+      setMessage(friendlyEvmError(error, error instanceof Error ? error.message : "Tally publication or approval failed."));
+    } finally {
+      setPublishingTally(false);
     }
   };
 
@@ -178,59 +251,93 @@ export default function Results() {
 
         {selected.privacyMode === "SecretSealed" && selected.status === "Tallying" && (
           <div className="committee-operator-panel">
-            <strong>Committee Tally Approval</strong>
+            <div className="tally-workspace-heading">
+              <div>
+                <strong>Committee tally workspace</strong>
+                <p>Recover the ballot set locally after the on-chain deadline, review the result, and approve it.</p>
+              </div>
+              <span className="tally-deadline-state"><ShieldCheck size={15} /> Voting closed</span>
+            </div>
             {committeeStatus.isMember ? (
-              <>
-                <p>
-                  {committeeStatus.hasApproved
-                    ? "Your wallet has already approved the current tally."
-                    : "Submit the tally in option order after checking the committee transcript."}
-                </p>
-                <label className="input-label">
-                  Tally values
-                  <input
-                    className="input"
-                    value={tallyRaw}
-                    onChange={(event) => setTallyRaw(event.target.value)}
-                    placeholder={selected.options.map(() => "0").join(", ")}
-                    disabled={committeeStatus.hasApproved}
-                  />
-                </label>
-                <label className="input-label">
-                  Tally transcript URI
-                  <input
-                    className="input"
-                    value={tallyURI}
-                    onChange={(event) => setTallyURI(event.target.value)}
-                    placeholder="ipfs://..."
-                    disabled={committeeStatus.hasApproved}
-                  />
-                </label>
-                <label className="input-label">
-                  Tally proof hash
-                  <input
-                    className="input"
-                    value={tallyProofHash}
-                    onChange={(event) => setTallyProofHash(event.target.value)}
-                    placeholder="0x..."
-                    disabled={committeeStatus.hasApproved}
-                  />
-                </label>
-                <label className="input-label">
-                  Committee tally secret
-                  <input
-                    className="input"
-                    type="password"
-                    value={tallySecret}
-                    onChange={(event) => setTallySecret(event.target.value)}
-                    placeholder="Shared tally secret"
-                    disabled={committeeStatus.hasApproved}
-                  />
-                </label>
-                <button className="cta" onClick={handleApproveThresholdTally} disabled={committeeStatus.hasApproved}>
-                  Approve Tally
-                </button>
-              </>
+              committeeStatus.hasApproved ? (
+                <div className="tally-complete-state"><FileCheck2 size={18} /><span>Your wallet has already approved this proposal's tally.</span></div>
+              ) : (
+                <>
+                  {!preparedTally ? (
+                    <div className="tally-import-zone">
+                      <Upload size={20} />
+                      <div>
+                        <strong>{preparingTally ? "Reconstructing tally..." : "Import proposal recovery kit"}</strong>
+                        <p>The election key is used only in this browser tab and is never uploaded or saved.</p>
+                      </div>
+                      <label className={`cta tally-file-command ${preparingTally ? "disabled" : ""}`}>
+                        <Upload size={15} /> Choose recovery kit
+                        <input
+                          type="file"
+                          accept="application/json,.json"
+                          disabled={preparingTally}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            void handleRecoveryKit(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="prepared-tally">
+                      <div className="prepared-tally-status">
+                        <FileCheck2 size={19} />
+                        <div><strong>Tally package prepared</strong><span>{preparedTally.transcript.ballotCount} authenticated ballot{preparedTally.transcript.ballotCount === 1 ? "" : "s"} reconstructed from BOT Chain.</span></div>
+                      </div>
+                      <div className="prepared-tally-options">
+                        {selected.options.map((option, index) => (
+                          <div key={option}><span>{option}</span><strong>{preparedTally.transcript.finalTally[index]}</strong></div>
+                        ))}
+                      </div>
+                      <dl className="prepared-tally-evidence">
+                        <div><dt>Transcript hash</dt><dd>{shortAddress(preparedTally.transcriptHash)}</dd></div>
+                        <div><dt>Contract ballots</dt><dd>{selected.votesCast}</dd></div>
+                        <div><dt>Recovered ballots</dt><dd>{preparedTally.transcript.ballotCount}</dd></div>
+                      </dl>
+                      <p className="tally-boundary-note">This confirms evidence integrity and local reconstruction. The current contract does not verify a zero-knowledge proof of decryption correctness.</p>
+                      <div className="prepared-tally-actions">
+                        <button className="cta" onClick={handlePublishAndApprove} disabled={publishingTally}>
+                          <ShieldCheck size={15} /> {publishingTally ? "Publishing tally..." : "Publish and approve result"}
+                        </button>
+                        <button className="secondary-cta" onClick={downloadTranscript} disabled={publishingTally}>
+                          <Download size={15} /> Download transcript
+                        </button>
+                        <button className="text-command" onClick={() => { setPreparedTally(null); setTallySecret(""); }} disabled={publishingTally}>
+                          Use another kit
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <details className="manual-tally-details">
+                    <summary>Advanced manual approval</summary>
+                    <p>Use only when the automated transcript publisher is unavailable.</p>
+                    <label className="input-label">
+                      Tally values
+                      <input className="input" value={tallyRaw} onChange={(event) => setTallyRaw(event.target.value)} placeholder={selected.options.map(() => "0").join(", ")} />
+                    </label>
+                    <label className="input-label">
+                      Tally transcript URI
+                      <input className="input" value={tallyURI} onChange={(event) => setTallyURI(event.target.value)} placeholder="ipfs://... or https://..." />
+                    </label>
+                    <label className="input-label">
+                      Transcript hash
+                      <input className="input" value={tallyProofHash} onChange={(event) => setTallyProofHash(event.target.value)} placeholder="0x..." />
+                    </label>
+                    <label className="input-label">
+                      Committee tally secret
+                      <input className="input" type="password" value={tallySecret} onChange={(event) => setTallySecret(event.target.value)} placeholder="0x..." />
+                    </label>
+                    <button className="secondary-cta" onClick={handleApproveThresholdTally}>Approve manual package</button>
+                  </details>
+                </>
+              )
             ) : (
               <p>Connect a committee wallet to approve the threshold tally.</p>
             )}

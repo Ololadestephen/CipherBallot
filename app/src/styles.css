@@ -3549,6 +3549,12 @@ select.input:focus {
   font-weight: 400;
 }
 
+.duration-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 10px;
+}
+
 .input-error {
   border-color: #ff5c5c !important;
 }
@@ -4255,6 +4261,227 @@ select.input:focus {
   color: #7c8480;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.tally-workspace-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 22px;
+}
+
+.tally-workspace-heading strong {
+  display: block;
+  color: #f0f3f1;
+  font-family: var(--font-heading);
+  font-size: 19px;
+}
+
+.tally-workspace-heading p,
+.tally-import-zone p,
+.prepared-tally-status span,
+.manual-tally-details > p {
+  margin: 7px 0 0;
+  color: #7c8480;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.tally-deadline-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  color: #36d399;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tally-import-zone {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  color: #36d399;
+}
+
+.tally-import-zone strong,
+.prepared-tally-status strong {
+  display: block;
+  color: #e8ecea;
+  font-size: 13px;
+}
+
+.tally-file-command {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tally-file-command input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+.tally-file-command.disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.prepared-tally {
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.prepared-tally-status,
+.tally-complete-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+  color: #36d399;
+}
+
+.tally-complete-state {
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  color: #8fd9bc;
+  font-size: 13px;
+}
+
+.prepared-tally-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.prepared-tally-options > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 17px 16px;
+}
+
+.prepared-tally-options > div + div {
+  border-left: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.prepared-tally-options span {
+  color: #8a928e;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.prepared-tally-options strong {
+  color: #f0f3f1;
+  font-size: 21px;
+}
+
+.prepared-tally-evidence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 18px 0;
+}
+
+.prepared-tally-evidence div {
+  display: grid;
+  gap: 5px;
+}
+
+.prepared-tally-evidence dt {
+  color: #68706c;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.prepared-tally-evidence dd {
+  margin: 0;
+  color: #c7ceca;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.tally-boundary-note {
+  margin: 0;
+  padding: 14px 16px;
+  border-left: 2px solid #d9b75e;
+  background: rgba(217, 183, 94, 0.06);
+  color: #9a9278;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.prepared-tally-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 20px;
+}
+
+.secondary-cta,
+.text-command {
+  min-height: 42px;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 17px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: #d7dcd9;
+}
+
+.text-command {
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: #85908a;
+}
+
+.secondary-cta:hover,
+.text-command:hover {
+  color: #fff;
+}
+
+.secondary-cta:disabled,
+.text-command:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.manual-tally-details {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.manual-tally-details summary {
+  color: #8a928e;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.manual-tally-details .secondary-cta {
+  margin-top: 18px;
 }
 
 .result-evidence-grid {
@@ -5059,11 +5286,76 @@ select.input,
 :root[data-theme="light"] .authorization-facts dd,
 :root[data-theme="light"] .result-row-main h2,
 :root[data-theme="light"] .committee-operator-panel > strong,
+:root[data-theme="light"] .tally-workspace-heading strong,
+:root[data-theme="light"] .tally-import-zone strong,
+:root[data-theme="light"] .prepared-tally-status strong,
+:root[data-theme="light"] .prepared-tally-options strong,
 :root[data-theme="light"] .proof-status-strip strong,
 :root[data-theme="light"] .proof-ledger-heading h2,
 :root[data-theme="light"] .proof-lifecycle h2,
 :root[data-theme="light"] .proof-ledger dt {
   color: var(--text-primary);
+}
+
+:root[data-theme="light"] .tally-import-zone,
+:root[data-theme="light"] .prepared-tally,
+:root[data-theme="light"] .prepared-tally-options,
+:root[data-theme="light"] .prepared-tally-options > div + div,
+:root[data-theme="light"] .tally-complete-state,
+:root[data-theme="light"] .manual-tally-details {
+  border-color: var(--stroke);
+}
+
+:root[data-theme="light"] .tally-workspace-heading p,
+:root[data-theme="light"] .tally-import-zone p,
+:root[data-theme="light"] .prepared-tally-status span,
+:root[data-theme="light"] .prepared-tally-options span,
+:root[data-theme="light"] .prepared-tally-evidence dt,
+:root[data-theme="light"] .manual-tally-details > p,
+:root[data-theme="light"] .manual-tally-details summary {
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .prepared-tally-evidence dd,
+:root[data-theme="light"] .secondary-cta {
+  color: var(--text-secondary);
+}
+
+:root[data-theme="light"] .secondary-cta {
+  border-color: var(--stroke-strong);
+  background: var(--surface);
+}
+
+:root[data-theme="light"] .text-command {
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .secondary-cta:hover,
+:root[data-theme="light"] .text-command:hover {
+  color: var(--text-primary);
+}
+
+:root[data-theme="light"] .tally-boundary-note {
+  background: var(--gold-soft);
+  color: #705b20;
+}
+
+:root[data-theme="light"] .feedback-msg {
+  border: 1px solid var(--stroke);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
+:root[data-theme="light"] .feedback-msg.error {
+  border-color: #e8b6b6;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+:root[data-theme="light"] .feedback-msg.done {
+  border-color: #a8d9c5;
+  background: var(--green-soft);
+  color: var(--primary);
 }
 
 :root[data-theme="light"] .option-tile,
@@ -5321,5 +5613,50 @@ select.input,
 @media (max-width: 680px) {
   .nav-actions {
     gap: 8px;
+  }
+
+  .tally-workspace-heading,
+  .prepared-tally-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tally-import-zone {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .tally-file-command {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .prepared-tally-options,
+  .prepared-tally-evidence {
+    grid-template-columns: 1fr;
+  }
+
+  .prepared-tally-options > div + div {
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    border-left: 0;
+  }
+
+  .prepared-tally-evidence {
+    gap: 13px;
+  }
+
+  .prepared-tally-actions .cta,
+  .prepared-tally-actions .secondary-cta,
+  .prepared-tally-actions .text-command {
+    width: 100%;
+  }
+
+  .duration-control {
+    grid-template-columns: minmax(0, 1fr) 125px;
+  }
+}
+
+@media (max-width: 420px) {
+  .duration-control {
+    grid-template-columns: 1fr;
   }
 }

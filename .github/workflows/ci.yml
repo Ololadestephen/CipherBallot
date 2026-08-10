@@ -55,6 +55,10 @@ jobs:
         working-directory: app
         run: npm run test:relay-store
 
+      - name: Test tally transcript validation
+        working-directory: app
+        run: npm run test:tally-transcript
+
       - name: Run local agent-relayer E2E
         working-directory: app
         run: npm run test:e2e
