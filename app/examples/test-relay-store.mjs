@@ -12,6 +12,7 @@ const {
   getTallyTranscript,
   getRelayJob,
   isRelayJobId,
+  normalizeStoredTallyTranscript,
   releaseRelayLock,
   relayJobId,
   saveTallyTranscript,
@@ -62,5 +63,10 @@ const tallyTranscript = JSON.stringify({ proposalId: 1, finalTally: [1, 0] });
 assert.equal(await saveTallyTranscript(tallyHash, tallyTranscript), tallyTranscript);
 assert.equal(await getTallyTranscript(tallyHash), tallyTranscript);
 assert.equal(await saveTallyTranscript(tallyHash, "different"), tallyTranscript);
+assert.equal(normalizeStoredTallyTranscript(JSON.parse(tallyTranscript)), tallyTranscript);
+assert.equal(
+  normalizeStoredTallyTranscript({ format: "cipherballot-tally-storage-v1", transcript: tallyTranscript }),
+  tallyTranscript
+);
 
 console.log(JSON.stringify({ result: "passed", relayJobId: id, idempotent: true, distributedLock: true, rateLimit: true, tallyStorage: true }, null, 2));
