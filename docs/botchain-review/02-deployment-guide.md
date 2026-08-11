@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers the current BOT Chain testnet deployment and the procedure for a fresh mainnet pilot deployment. CipherBallot contracts are immutable and non-upgradeable; contract changes require a new deployment and updated application configuration.
+This guide covers the current BOT Chain testnet and mainnet deployments and the procedure for promoting a verified release. CipherBallot contracts are immutable and non-upgradeable; contract changes require a new deployment and updated application configuration.
 
 ## Architecture
 
@@ -25,6 +25,21 @@ Deployment block: 19063989
 ```
 
 The deployment transaction and verified contract are linked from the [package index](README.md).
+
+## Current Mainnet Deployment
+
+```text
+Network: BOT Chain mainnet
+Chain ID: 677
+RPC: https://rpc.botchain.ai
+Explorer: https://scan.botchain.ai
+Contract: 0x1559C3a6B02E331307438D7839016EA5A827F467
+Deployment transaction: 0xddcfcb980c2f700accccd2f7eb3482f7b63444c38cea48cc1ddbc7dad47cca36
+Deployment block: 19263053
+Runtime bytecode hash: 0xdd02e913a2113e1f1ebe3fc360452b6947daac85d0f0543ad881a5bd7e55afab
+```
+
+The mainnet source is verified with Solidity `0.8.24`, optimizer `200`, and `via_ir=true`. The deployed runtime bytecode exactly matches the release artifact built from commit `6653cad`.
 
 ## Prerequisites
 

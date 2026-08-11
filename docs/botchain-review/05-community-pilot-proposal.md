@@ -146,4 +146,4 @@ CipherBallot requests confirmation of a pilot sponsor, proposal wording, partici
 
 ## Mainnet Eligibility Extension
 
-The current V2 contract is already source-verified on BOT Chain testnet. For the fresh mainnet deployment, CipherBallot plans to add snapshot-based eligibility for ERC-20 balances, ERC-721 ownership or minimum NFT counts, and ERC-1155 token IDs and balances. Proposal creators will configure the asset contract and minimum holding requirement while the protocol preserves one vote per eligible wallet. Snapshot proofs will prevent participants from voting, transferring the same asset to another wallet, and voting again.
+The current V2 contract is source-verified on BOT Chain mainnet. For the next contract release, CipherBallot plans to add snapshot-based eligibility for ERC-20 balances, ERC-721 ownership or minimum NFT counts, and ERC-1155 token IDs and balances. Proposal creators will configure the asset contract and minimum holding requirement while the protocol preserves one vote per eligible wallet. Snapshot proofs will prevent participants from voting, transferring the same asset to another wallet, and voting again.

@@ -1,20 +1,21 @@
 # CipherBallot BOT Chain Review Package
 
-Prepared for the BOT Chain ecosystem and mainnet-readiness review on 2026-08-10.
+Prepared for the BOT Chain ecosystem and mainnet-readiness review. Updated 2026-08-11 with the verified mainnet deployment.
 
 ## Executive Status
 
-CipherBallot is live on BOT Chain testnet as a private governance protocol. The current deployment supports encrypted one-action ballots, direct and agent-executed voting, committee readiness and handoff, threshold tally approval, result verification, and commit-reveal fallback.
+CipherBallot V2 is deployed and source-verified on BOT Chain mainnet as a private governance protocol. The release supports encrypted one-action ballots, direct and agent-executed voting, committee readiness and handoff, threshold tally approval, result verification, and commit-reveal fallback.
 
 | Review area | Current disposition |
 | --- | --- |
 | Testnet deployment | Live and explorer-verified |
+| Mainnet deployment | Live and explorer-verified |
 | Automated validation | Passing contract, cryptography, agent, relayer, handoff, E2E, build, and dependency checks |
 | Non-binding community pilot | Ready after participants, committee wallets, and proposal wording are agreed |
-| Limited mainnet pilot | Conditionally ready after a fresh verified mainnet deployment and operational dry run |
+| Limited mainnet pilot | Ready after the operational dry run, participant group, committee wallets, and proposal wording are agreed |
 | Ecosystem collaboration | Pilot, mainnet deployment, and product-roadmap support requested |
 
-The package is based on implementation commit `92258ef`, merged through [PR #8](https://github.com/Ololadestephen/CipherBallot/pull/8), and the automated and live evidence listed below.
+The mainnet contract was deployed from implementation commit `6653cad`, with the automated and live evidence listed below.
 
 ## Review Order
 
@@ -28,6 +29,9 @@ The package is based on implementation commit `92258ef`, merged through [PR #8](
 
 - Application: https://www.cipherballot.xyz
 - Repository: https://github.com/Ololadestephen/CipherBallot
+- Mainnet contract: [`0x1559C3a6B02E331307438D7839016EA5A827F467`](https://scan.botchain.ai/address/0x1559C3a6B02E331307438D7839016EA5A827F467)
+- Mainnet deployment transaction: [`0xddcfcb980c2f700accccd2f7eb3482f7b63444c38cea48cc1ddbc7dad47cca36`](https://scan.botchain.ai/tx/0xddcfcb980c2f700accccd2f7eb3482f7b63444c38cea48cc1ddbc7dad47cca36)
+- Mainnet deployment block: `19263053`
 - Testnet contract: [`0x3C250cBf439431D7dd8525Ca9800c577a9533e3C`](https://scan.bohr.life/address/0x3C250cBf439431D7dd8525Ca9800c577a9533e3C)
 - Deployment transaction: [`0x656445179fecda3b26bbb925a15f40ceb0bc24e2cc33fa57556be359d144dd67`](https://scan.bohr.life/tx/0x656445179fecda3b26bbb925a15f40ceb0bc24e2cc33fa57556be359d144dd67)
 - Deployment block: `19063989`

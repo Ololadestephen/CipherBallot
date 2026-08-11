@@ -1,6 +1,6 @@
 # Mainnet Readiness Checklist
 
-Assessment date: 2026-08-10
+Assessment date: 2026-08-11
 
 Status legend:
 
@@ -34,14 +34,14 @@ Status legend:
 | Eligibility policy | Verified | Public and fixed allowlist proposals are supported. |
 | Agent authorization | Verified | Delegation scope, expiry, revocation, signatures, and separate nonces are enforced. |
 | Committee threshold | Verified | At least two committee members and at least two matching approvals are required by the current contract. |
-| Mainnet contract | Pending | Deploy fresh immutable bytecode to BOT Chain mainnet and verify source before pilot use. |
-| Mainnet chain parameters | Pending | BOT Chain must confirm the production RPC, chain ID, explorer, and native-token funding process. |
+| Mainnet contract | Verified | Contract `0x1559...F467`, deployment block `19263053`, source verified on BOTScan. |
+| Mainnet chain parameters | Verified | Chain ID `677`, RPC `https://rpc.botchain.ai`, explorer `https://scan.botchain.ai`, native token BOT. |
 
 ## 3. Relayer And API
 
 | Check | Status | Evidence or required action |
 | --- | --- | --- |
-| Dedicated relayer wallet | Ready | A dedicated funded relayer is used; rotate and fund a mainnet-specific wallet. |
+| Dedicated relayer wallet | Ready | Mainnet relayer `0x466e...5693` is separate from the deployer and funded with a capped balance. |
 | Relayer identity pinning | Verified | `RELAYER_EXPECTED_ADDRESS` prevents silent key substitution. |
 | API authentication | Verified | A constant-time checked API key protects proposal, health, vote, and status resources. |
 | Origin restrictions | Verified | Same-origin and explicit allowlist checks are implemented. |
@@ -65,7 +65,7 @@ Status legend:
 | Operational key ceremony | Pending | Name the kit custodian, backup location, release authority, and incident process before the pilot. |
 | Distributed threshold decryption | Roadmap | Current V2 has one election private key; DKG and threshold key shares are not implemented. |
 | Public proof of tally correctness | Roadmap | Transcript integrity is recorded, but correct decryption is not yet proven on-chain. |
-| Token and NFT eligibility | Mainnet release | The current V2 contract is already source-verified on BOT Chain testnet. Add snapshot-based ERC-20, ERC-721, and ERC-1155 minimum-holding eligibility to the fresh mainnet deployment. |
+| Token and NFT eligibility | Roadmap | The current V2 contract is source-verified on BOT Chain mainnet. Add snapshot-based ERC-20, ERC-721, and ERC-1155 minimum-holding eligibility to the next contract release. |
 
 ## 5. Security And Quality Gates
 
@@ -96,4 +96,4 @@ The pilot can launch when the teams complete these coordination steps:
 
 ## Readiness Decision
 
-**Recommended:** approve CipherBallot for a BOT Chain community governance pilot after the launch checks above. The application, contract, relayer, committee workflow, and automated validation are ready for this use case. A fresh verified mainnet deployment can follow the operator dry run, while distributed threshold decryption and publicly verifiable tally proofs continue as product-roadmap enhancements.
+**Recommended:** approve CipherBallot for a BOT Chain community governance pilot after the launch checks above. The application, verified mainnet contract, relayer, committee workflow, and automated validation are ready for this use case, while distributed threshold decryption and publicly verifiable tally proofs continue as product-roadmap enhancements.

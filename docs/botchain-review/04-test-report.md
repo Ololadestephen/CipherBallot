@@ -78,6 +78,23 @@ The E2E suite starts an ephemeral Anvil chain, deploys a fresh contract, exercis
 
 The first sandboxed execution could not bind a localhost listener (`EPERM`). The same command was rerun with localhost access and passed. This was an execution-environment restriction, not an application assertion failure.
 
+## BOT Chain Mainnet Deployment Evidence
+
+| Item | Verified value |
+| --- | --- |
+| Network | BOT Chain mainnet, chain ID `677` |
+| Contract | [`0x1559C3a6B02E331307438D7839016EA5A827F467`](https://scan.botchain.ai/address/0x1559C3a6B02E331307438D7839016EA5A827F467) |
+| Deployment transaction | [`0xddcfcb...ca36`](https://scan.botchain.ai/tx/0xddcfcb980c2f700accccd2f7eb3482f7b63444c38cea48cc1ddbc7dad47cca36) |
+| Deployment block | `19263053` |
+| Release commit | `6653cad` |
+| Compiler | Solidity `0.8.24`, optimizer `200`, `via_ir=true` |
+| Contract tests | 20 passed, 0 failed, 0 skipped immediately before deployment |
+| Runtime bytecode | `12045` bytes; exact match with the release artifact |
+| Runtime bytecode hash | `0xdd02e913a2113e1f1ebe3fc360452b6947daac85d0f0543ad881a5bd7e55afab` |
+| Initial state | `proposalCount = 0` |
+
+The deployment receipt succeeded with `2,658,102` gas used. BOTScan accepted and verified the exact source after deployment.
+
 ## Live BOT Chain End-to-End Evidence
 
 ### Completed Governance Run

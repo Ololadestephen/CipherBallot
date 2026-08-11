@@ -126,7 +126,7 @@ export default function Docs() {
             <p>People can vote from the application, sign a single ballot for relay, or delegate a narrow voting permission. Agents can execute those signed instructions, act under an active delegation, or vote under their own identity on an open proposal.</p>
             <div className="docs-callout">
               <strong>Current release</strong>
-              <p>CipherBallot V2 is live on BOT Chain testnet and ready for controlled governance pilots, with distributed threshold decryption and public tally proofs continuing on the product roadmap.</p>
+              <p>CipherBallot V2 is source-verified on BOT Chain mainnet and ready for controlled governance pilots, with distributed threshold decryption and public tally proofs continuing on the product roadmap.</p>
             </div>
             <div className="docs-data-table">
               <div><strong>Private participation</strong><span>Secret-sealed ballots publish ciphertext and commitments instead of readable choices.</span></div>
@@ -149,7 +149,7 @@ export default function Docs() {
               <div><strong>V2 contract</strong><span><code>{CONTRACT_ADDRESS || "Not configured"}</code></span></div>
               <div><strong>Source</strong><span><a className="docs-inline-link" href={repositoryUrl} target="_blank" rel="noreferrer">Ololadestephen/CipherBallot</a></span></div>
             </div>
-            <p>The wallet control can add BOT Chain Testnet with <code>wallet_addEthereumChain</code> or switch an existing entry with <code>wallet_switchEthereumChain</code>.</p>
+            <p>The wallet control can add {BOT_CHAIN.name} with <code>wallet_addEthereumChain</code> or switch an existing entry with <code>wallet_switchEthereumChain</code>.</p>
           </section>
 
           <section id="quick-start">
@@ -166,7 +166,7 @@ cd CipherBallot/app
 npm install
 cp .env.example .env
 npm run dev`}</CodeBlock>
-            <p>Open <code>http://localhost:5173</code>, connect a wallet, and use the network control to add or switch to BOT Chain Testnet.</p>
+            <p>Open <code>http://localhost:5173</code>, connect a wallet, and use the network control to add or switch to {BOT_CHAIN.name}.</p>
             <h3>Minimum browser configuration</h3>
             <CodeBlock language="dotenv">{`VITE_BOTCHAIN_RPC_URL=${BOT_CHAIN.rpcUrl}
 VITE_BOTCHAIN_EXPLORER_URL=${BOT_CHAIN.explorerUrl}
@@ -288,7 +288,7 @@ npm run agent -- status cb_RelayJobId`}</CodeBlock>
             <p className="docs-kicker">Operations</p>
             <h2>Create a proposal</h2>
             <ol>
-              <li>Connect the creator wallet and confirm BOT Chain Testnet.</li>
+              <li>Connect the creator wallet and confirm {BOT_CHAIN.name}.</li>
               <li>Add a title and 2–8 unique, mutually exclusive options.</li>
               <li>Start immediately or schedule a future opening, then set the duration.</li>
               <li>Choose secret-sealed or commit-reveal privacy.</li>
@@ -575,12 +575,12 @@ npm audit --omit=dev`}</CodeBlock>
               <li>Distributed key generation and true threshold decryption.</li>
               <li>Public proof verification for ballot validity and tally correctness.</li>
               <li>Persistent autonomous agent runner with policies, safe abstention, and decision receipts.</li>
-              <li>Mainnet release: snapshot-based ERC-20, ERC-721, and ERC-1155 eligibility with configurable minimum holdings and one vote per eligible wallet. The current V2 contract is already source-verified on BOT Chain testnet; this module will be included in the fresh mainnet deployment.</li>
+              <li>Next contract release: snapshot-based ERC-20, ERC-721, and ERC-1155 eligibility with configurable minimum holdings and one vote per eligible wallet. The current V2 contract is already source-verified on BOT Chain mainnet.</li>
               <li>Event indexing, notifications, governance analytics, and richer audit history.</li>
               <li>Account abstraction, broader sponsorship controls, and mainnet community pilots.</li>
             </ul>
             <p>Roadmap items describe intended work, not capabilities available in the current deployment.</p>
-            <div className="docs-callout"><strong>Start building</strong><p>Review an active decision, create a test proposal, or integrate the agent client against the deployed testnet contract.</p><div className="docs-callout-actions"><Link className="button-ghost" to="/voters">Explore proposals</Link><Link className="button-ghost" to="/creators">Create proposal</Link><Link className="button-ghost" to="/agents">Agent access</Link></div></div>
+            <div className="docs-callout"><strong>Start building</strong><p>Review an active decision, create a pilot proposal, or integrate the agent client against the verified mainnet contract.</p><div className="docs-callout-actions"><Link className="button-ghost" to="/voters">Explore proposals</Link><Link className="button-ghost" to="/creators">Create proposal</Link><Link className="button-ghost" to="/agents">Agent access</Link></div></div>
           </section>
         </article>
 
