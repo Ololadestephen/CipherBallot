@@ -382,7 +382,7 @@ export function EvmWalletProvider({ children }: { children: React.ReactNode }) {
   const switchToBotChain = useCallback(async () => {
     setNetworkError("");
     if (!window.ethereum) {
-      setNetworkError("Install MetaMask or another EVM wallet to add BOT Chain Testnet.");
+      setNetworkError(`Install MetaMask or another EVM wallet to add ${BOT_CHAIN.name}.`);
       return false;
     }
 
@@ -415,12 +415,12 @@ export function EvmWalletProvider({ children }: { children: React.ReactNode }) {
 
       const activeChain = await window.ethereum.request({ method: "eth_chainId" }) as string;
       if (Number.parseInt(activeChain, 16) !== BOT_CHAIN.chainId) {
-        throw new Error("Your wallet did not switch to BOT Chain Testnet. Please try again in the wallet network menu.");
+        throw new Error(`Your wallet did not switch to ${BOT_CHAIN.name}. Please try again in the wallet network menu.`);
       }
       await refresh();
       return true;
     } catch (error) {
-      setNetworkError(readableWalletError(error, "Could not switch to BOT Chain Testnet."));
+      setNetworkError(readableWalletError(error, `Could not switch to ${BOT_CHAIN.name}.`));
       return false;
     } finally {
       setSwitchingNetwork(false);

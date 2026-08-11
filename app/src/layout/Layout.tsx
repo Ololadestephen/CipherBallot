@@ -129,7 +129,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 onClick={() => void wallet.switchToBotChain()}
                 disabled={wallet.switchingNetwork}
                 aria-busy={wallet.switchingNetwork}
-                aria-label="Switch to BOT Chain Testnet"
+                aria-label={`Switch to ${BOT_CHAIN.name}`}
               >
                 <WalletCards size={16} />
                 <span>{wallet.switchingNetwork ? "Switching..." : "Switch network"}</span>
