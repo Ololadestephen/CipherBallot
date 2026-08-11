@@ -22,4 +22,17 @@ if (unsafeNames.size > 0) {
   process.exit(1);
 }
 
+const vercelConfig = JSON.parse(await readFile("vercel.json", "utf8"));
+const contentSecurityPolicy = vercelConfig.headers
+  ?.flatMap((entry) => entry.headers || [])
+  .find((header) => header.key === "Content-Security-Policy")
+  ?.value || "";
+const missingRpcOrigins = ["https://rpc.bohr.life", "https://rpc.botchain.ai"]
+  .filter((origin) => !contentSecurityPolicy.includes(origin));
+
+if (missingRpcOrigins.length > 0) {
+  console.error(`Content Security Policy blocks configured BOT Chain RPC origins: ${missingRpcOrigins.join(", ")}`);
+  process.exit(1);
+}
+
 console.log("Public environment variable check passed.");
