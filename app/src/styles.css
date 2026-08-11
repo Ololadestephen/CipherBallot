@@ -1343,13 +1343,30 @@ textarea::placeholder {
   overflow: hidden;
 }
 
-.landing-hero-image {
+.landing-hero-fallback,
+.landing-hero-image,
+.landing-hero-video {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.landing-hero-fallback,
+.landing-hero-video {
+  position: absolute;
+  inset: 0;
+}
+
+.landing-hero-image,
+.landing-hero-video {
   object-fit: cover;
   object-position: center;
   filter: contrast(1.04) saturate(1.06);
+}
+
+.landing-hero-video {
+  z-index: 1;
+  pointer-events: none;
 }
 
 .landing-hero-shade {
@@ -1951,6 +1968,10 @@ textarea::placeholder {
     opacity: 0.96;
   }
 
+  .landing-hero-video {
+    display: none;
+  }
+
   .landing-hero-image {
     object-position: center 28%;
   }
@@ -2467,6 +2488,10 @@ textarea::placeholder {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .landing-hero-video {
+    display: none;
+  }
+
   .landing-button {
     transition: none;
   }
