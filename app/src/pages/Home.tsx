@@ -58,17 +58,41 @@ export default function Home() {
   return (
     <div className="landing-page">
       <section className="landing-hero" aria-labelledby="landing-title">
-        <picture className="landing-hero-media">
-          <source media="(max-width: 760px)" srcSet="/images/landing/hero-cosmic-governance-mobile.webp" />
-          <img
-            className="landing-hero-image"
-            src="/images/landing/hero-cosmic-governance.webp"
-            alt="A luminous digital figure moving through a field of stars"
-            width="1672"
-            height="941"
-            fetchPriority="high"
-          />
-        </picture>
+        <div className="landing-hero-media">
+          <picture className="landing-hero-fallback">
+            <source media="(max-width: 760px)" srcSet="/images/landing/hero-cosmic-governance-mobile.webp" />
+            <img
+              className="landing-hero-image"
+              src="/images/landing/hero-cosmic-governance.webp"
+              alt="A luminous digital figure moving through a field of stars"
+              width="1672"
+              height="941"
+              fetchPriority="high"
+            />
+          </picture>
+          <video
+            className="landing-hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="/images/landing/hero-cosmic-governance.webp"
+            aria-hidden="true"
+            tabIndex={-1}
+          >
+            <source
+              src="/videos/hero-cosmic-governance-loop.webm"
+              type="video/webm"
+              media="(min-width: 761px) and (prefers-reduced-motion: no-preference)"
+            />
+            <source
+              src="/videos/hero-cosmic-governance-loop.mp4"
+              type="video/mp4"
+              media="(min-width: 761px) and (prefers-reduced-motion: no-preference)"
+            />
+          </video>
+        </div>
         <div className="landing-hero-shade" aria-hidden="true" />
         <div className="landing-container landing-hero-inner">
           <div className="landing-hero-copy">
